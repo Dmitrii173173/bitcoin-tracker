@@ -14,7 +14,11 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      backendUrl: process.env.BACKEND_URL || 'http://localhost:3001'
+      backendUrl: process.env.BACKEND_URL || 'http://localhost:3001',
+      baseURL: process.env.BASE_URL || 'http://localhost:8080'
     }
+  },
+  nitro: {
+    preset: 'node-server'
   }
 })
