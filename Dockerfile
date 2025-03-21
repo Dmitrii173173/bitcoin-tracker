@@ -16,7 +16,8 @@ WORKDIR /app
 RUN ls -la
 
 # Копируем package.json и package-lock.json
-COPY ./backend/package*.json ./
+# COPY ./backend/package*.json ./
+COPY package*.json ./
 
 # Устанавливаем зависимости
 RUN npm install
