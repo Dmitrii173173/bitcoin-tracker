@@ -1,5 +1,5 @@
 {
-  "name": "bitcoin-tracker-collector",
+  "name": "collector",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -10,10 +10,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@prisma/client": "^5.10.0",
-    "axios": "^1.6.7"
+    "@prisma/client": "^5.x",
+    "axios": "^1.x"
   },
   "devDependencies": {
-    "prisma": "^5.10.0"
+    "prisma": "^5.x"
   }
 }

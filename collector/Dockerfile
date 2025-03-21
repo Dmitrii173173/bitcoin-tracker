@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Копируем package.json и package-lock.json
+# Сначала копируем файлы package.json и package-lock.json
 COPY package*.json ./
 
 # Создаем директорию prisma и копируем схему
@@ -21,8 +21,8 @@ COPY prisma ./prisma/
 RUN npm install
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
-# Копируем исходный код
+# Копируем остальные файлы проекта
 COPY . .
 
 # Запускаем приложение
-CMD ["npm", "start"]
+CMD ["node", "index.js"]
