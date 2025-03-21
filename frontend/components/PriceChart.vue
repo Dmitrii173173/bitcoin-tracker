@@ -66,6 +66,9 @@ Chart.register(
   Legend
 );
 
+const config = useRuntimeConfig();
+const backendUrl = config.public.backendUrl;
+
 const periods = ["day", "week", "month", "year"];
 const currentPeriod = ref("day");
 const prices = ref([]);
@@ -118,16 +121,17 @@ async function fetchPrices(period) {
 
   loading.value = true;
   try {
-    // Имитация задержки API для демонстрации загрузки
-    const mockData = Array.from({ length: 24 }, (_, i) => ({
-      timestamp: new Date(Date.now() - i * 3600000).toISOString(),
-      price: 40000 + Math.random() * 10000,
-    })).reverse();
+    const response = await useFetch(
+      `${backendUrl}/api/prices?period=${period}`
+    );
+    const data = response.data.value;
 
-    prices.value = mockData;
-    currentPrice.value = mockData[mockData.length - 1].price;
-    updateChart();
-    lastUpdateTime.value = new Date().toLocaleString();
+    if (data && data.length > 0) {
+      prices.value = data;
+      currentPrice.value = data[data.length - 1].price;
+      updateChart();
+      lastUpdateTime.value = new Date().toLocaleString();
+    }
   } catch (err) {
     console.error("Error fetching prices:", err);
   } finally {
@@ -163,6 +167,9 @@ onMounted(async () => {
   chartReady.value = true;
   await fetchPrices("day");
 });
+
+// Удалите или закомментируйте строку
+// const { data } = await useFetch(`${backendUrl}/api/prices`)
 </script>
 
 <style scoped>

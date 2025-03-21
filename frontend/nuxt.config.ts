@@ -1,7 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   ssr: true,
   app: {
     head: {
@@ -14,8 +14,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      backendUrl: process.env.BACKEND_URL || 'http://localhost:3001',
-      baseURL: process.env.BASE_URL || 'http://localhost:8080'
+      backendUrl: process.env.BACKEND_URL || 'http://localhost:3001'
     }
   },
   nitro: {
