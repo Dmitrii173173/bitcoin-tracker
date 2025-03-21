@@ -1,26 +1,34 @@
 <template>
-  <div>
-    <h1>Курс биткоина</h1>
-    <select v-model="period" @change="fetchData">
-      <option value="day">День</option>
-      <option value="week">Неделя</option>
-      <option value="month">Месяц</option>
-      <option value="year">Год</option>
-    </select>
-    <BitcoinChart :data="prices" />
+  <div class="container">
+    <h1>Bitcoin Price Tracker</h1>
+    <div class="chart-wrapper"><PriceChart /></div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import BitcoinChart from "~/components/BitcoinChart.vue";
+import { onMounted } from "vue";
+import PriceChart from "~/components/PriceChart.vue";
 
-const period = ref("day");
-const prices = ref([]);
-
-const fetchData = async () => {
-  prices.value = await $fetch(`/api/prices?period=${period.value}`);
-};
-
-onMounted(fetchData);
+onMounted(() => {
+  console.log("Page mounted");
+});
 </script>
+
+<style scoped>
+.container {
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 30px;
+}
+
+.chart-wrapper {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+</style>

@@ -2,35 +2,47 @@ version: '3.8'
 
 services:
   backend:
-    build: ./backend
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "3001:3001"
     environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/bitcoin_tracker
+      - PORT=3001
+      - DATABASE_URL=${DATABASE_URL:-postgresql://user:password@db:5432/bitcoin_tracker}
+      - NODE_ENV=production
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   frontend:
-    build: ./frontend
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "${PORT:-8080}:3000"
     environment:
-      - BACKEND_URL=http://backend:3001
+      - BACKEND_URL=${BACKEND_URL:-http://backend:3001}
+      - NODE_ENV=production
     depends_on:
       backend:
         condition: service_healthy
 
   collector:
-    build: ./collector
+    build: 
+      context: ./collector
+      dockerfile: Dockerfile
+      args:
+        - DATABASE_URL=${DATABASE_URL:-postgresql://user:password@db:5432/bitcoin_tracker}
     environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/bitcoin_tracker
+      - DATABASE_URL=${DATABASE_URL:-postgresql://user:password@db:5432/bitcoin_tracker}
+      - NODE_ENV=production
     depends_on:
       db:
         condition: service_healthy
@@ -39,15 +51,15 @@ services:
   db:
     image: postgres:14
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: bitcoin_tracker
+      POSTGRES_USER: ${DB_USER:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: ${DB_NAME:-bitcoin_tracker}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d bitcoin_tracker"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-user} -d ${DB_NAME:-bitcoin_tracker}"]
       interval: 10s
       timeout: 5s
       retries: 5

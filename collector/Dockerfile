@@ -11,18 +11,14 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Сначала копируем файлы package.json и package-lock.json
-COPY package*.json ./
-
-# Создаем директорию prisma и копируем схему
-COPY prisma ./prisma/
-
-# Устанавливаем зависимости и генерируем Prisma Client
-RUN npm install
-RUN npx prisma generate --schema=./prisma/schema.prisma
-
-# Копируем остальные файлы проекта
+# Копируем все файлы проекта
 COPY . .
 
+# Устанавливаем зависимости
+RUN npm install
+
+# Генерируем Prisma Client
+RUN npx prisma generate
+
 # Запускаем приложение
-CMD ["node", "index.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npm start"]
