@@ -1,0 +1,19 @@
+{
+  "name": "bitcoin-tracker-collector",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@prisma/client": "^5.10.0",
+    "axios": "^1.6.7"
+  },
+  "devDependencies": {
+    "prisma": "^5.10.0"
+  }
+}

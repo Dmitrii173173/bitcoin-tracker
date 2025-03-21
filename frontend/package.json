@@ -1,0 +1,22 @@
+{
+  "name": "bitcoin-tracker-frontend",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "start": "node .output/server/index.mjs"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.1",
+    "nuxt": "^3.10.1",
+    "vue": "^3.4.15",
+    "vue-chartjs": "^5.3.0"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "^1.0.8",
+    "@types/node": "^20.11.16",
+    "typescript": "^5.3.3"
+  }
+}
