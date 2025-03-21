@@ -1,0 +1,17 @@
+{
+  "name": "bitcoin-tracker-backend",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "start": "node .output/server/index.mjs"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.10.0",
+    "axios": "^1.6.7",
+    "nuxt": "^3.10.1"
+  },
+  "devDependencies": {
+    "prisma": "^5.10.0"
+  }
+}
