@@ -10,8 +10,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Устанавливаем рабочую директорию в /usr/src/app или другую подходящую директорию
-WORKDIR /usr/src/app
-
+WORKDIR /app
 # Проверяем содержимое текущей директории (для диагностики)
 RUN ls -la
 
