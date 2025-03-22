@@ -9,14 +9,12 @@ RUN apt-get update && apt-get install -y curl && \
     apt-get install -y nodejs && \
     npm install -g npm@10.2.4
 
-# Копируем package.json и package-lock.json
-COPY package*.json ./
-
-# Устанавливаем зависимости
+# Копируем файлы из frontend директории
+COPY frontend/package*.json ./
 RUN npm install
 
-# Копируем все файлы приложения
-COPY . .
+# Копируем остальные файлы frontend
+COPY frontend/ ./
 
 # Проверяем структуру проекта
 RUN echo "=== Project structure ===" && \
