@@ -1,10 +1,45 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "./docker-compose.yml"
 
 [deploy]
-startCommand = "docker-compose up -d"
-healthcheckPath = "/api/health"
-healthcheckTimeout = 100
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3 
+numReplicas = 1
+
+[[services]]
+name = "frontend"
+dockerfile = "./frontend/Dockerfile"
+healthcheck = "/"
+port = 3000
+restartPolicy = "ON_FAILURE"
+envVars = [
+  { key = "NODE_ENV", value = "production" },
+  { key = "BACKEND_URL", value = "${{BACKEND_URL}}" },
+  { key = "NUXT_HOST", value = "0.0.0.0" },
+  { key = "NUXT_PORT", value = "3000" }
+]
+
+[[services]]
+name = "backend"
+dockerfile = "./backend/Dockerfile"
+healthcheck = "/api/health"
+port = 3001
+restartPolicy = "ON_FAILURE"
+envVars = [
+  { key = "NODE_ENV", value = "production" },
+  { key = "PORT", value = "3001" },
+  { key = "DATABASE_URL", value = "${{DATABASE_URL}}" }
+]
+
+[[services]]
+name = "collector"
+dockerfile = "./collector/Dockerfile"
+restartPolicy = "ON_FAILURE"
+envVars = [
+  { key = "NODE_ENV", value = "production" },
+  { key = "DATABASE_URL", value = "${{DATABASE_URL}}" }
+]
+
+[[plugins]]
+name = "postgresql"
+envVars = [
+  { key = "DATABASE_URL", value = "${{POSTGRESQL_URL}}" }
+] 
