@@ -1,9 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   ssr: false,
-  modules: [
-    '@pinia/nuxt'
-  ],
+  // Удаляем модуль Pinia
+  modules: [],
   app: {
     head: {
       title: 'Bitcoin Tracker',
@@ -24,10 +23,6 @@ export default defineNuxtConfig({
   },
   nitro: {
     preset: 'node-server'
-  },
-  // Упрощаем конфигурацию до минимума
-  pinia: {
-    autoImports: ['defineStore']
   },
   // Отключаем автоматические импорты
   imports: {
