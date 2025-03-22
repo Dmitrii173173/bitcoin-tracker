@@ -30,5 +30,8 @@ export default defineNuxtConfig({
   },
   modules: [
     'vue3-apexcharts'
-  ]
+  ],
+  build: {
+    transpile: ['vue3-apexcharts', 'apexcharts']
+  }
 })

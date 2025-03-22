@@ -9,12 +9,14 @@
     "start": "node .output/server/index.mjs"
   },
   "dependencies": {
-    "nuxt": "^3.8.0",
+    "nuxt": "^3.10.1",
     "pinia": "^2.1.7",
     "@pinia/nuxt": "^0.5.1",
     "chart.js": "^4.0.0",
     "vue-chartjs": "^5.0.0",
-    "@types/node": "^18"
+    "@types/node": "^18",
+    "vue3-apexcharts": "^1.4.4",
+    "apexcharts": "^3.45.2"
   },
   "devDependencies": {
     "@nuxt/types": "^2.15.8",
