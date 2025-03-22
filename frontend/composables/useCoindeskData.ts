@@ -1,60 +1,85 @@
-import { ref, reactive } from 'vue'
+import { ref, computed } from 'vue'
 
-const state = reactive({
-  priceHistory: [],
-  currentPrice: 0,
-  high: 0,
-  low: 0,
-  volume: 0,
-  change: '0'
-})
+interface CoindeskData {
+  time: {
+    updated: string
+  }
+  bpi: {
+    USD: {
+      rate_float: number
+    }
+  }
+}
 
 export function useCoindeskData() {
-  const fetchPriceData = async (period: string) => {
+  const data = ref<CoindeskData | null>(null)
+  const historicalData = ref<any[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+
+  const currentPrice = computed(() => {
+    return data.value?.bpi.USD.rate_float || 0
+  })
+
+  const fetchCurrentPrice = async () => {
     try {
+      loading.value = true
       const response = await fetch('https://api.coindesk.com/v1/bpi/currentprice.json')
+      data.value = await response.json()
+    } catch (e) {
+      error.value = 'Failed to fetch price'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchHistoricalData = async (period: 'day' | 'week' | 'month' | 'year') => {
+    try {
+      loading.value = true
+      const end = new Date()
+      let start = new Date()
+
+      switch (period) {
+        case 'day':
+          start.setDate(start.getDate() - 1)
+          break
+        case 'week':
+          start.setDate(start.getDate() - 7)
+          break
+        case 'month':
+          start.setMonth(start.getMonth() - 1)
+          break
+        case 'year':
+          start.setFullYear(start.getFullYear() - 1)
+          break
+      }
+
+      const startStr = start.toISOString().split('T')[0]
+      const endStr = end.toISOString().split('T')[0]
+
+      const response = await fetch(
+        `https://api.coindesk.com/v1/bpi/historical/close.json?start=${startStr}&end=${endStr}`
+      )
       const data = await response.json()
-      
-      state.currentPrice = parseFloat(data.bpi.USD.rate.replace(',', ''))
-      
-      let points = 12
-      switch(period) {
-        case 'day': points = 12; break
-        case 'week': points = 7; break
-        case 'month': points = 15; break
-        case 'year': points = 12; break
-      }
-
-      const now = new Date()
-      const newHistory = []
-      let lastPrice = state.currentPrice
-
-      for (let i = points; i >= 0; i--) {
-        const timestamp = new Date(now.getTime() - (i * 3600000))
-        const variation = state.currentPrice * 0.001
-        const trend = Math.random() < 0.6 ? 1 : -1
-        const price = lastPrice + (trend * variation * Math.random())
-        lastPrice = price
-
-        newHistory.push({
-          timestamp,
-          price
-        })
-      }
-
-      state.priceHistory = newHistory
-      state.high = Math.max(...newHistory.map(p => p.price))
-      state.low = Math.min(...newHistory.map(p => p.price))
-      state.volume = Math.floor(Math.random() * 1000000)
-      state.change = ((state.currentPrice - newHistory[0].price) / newHistory[0].price * 100).toFixed(2)
-
-    } catch (error) {
-      console.error('Error fetching Coindesk data:', error)
+      historicalData.value = Object.entries(data.bpi).map(([date, price]) => ({
+        x: new Date(date).getTime(),
+        y: price
+      }))
+    } catch (e) {
+      error.value = 'Failed to fetch historical data'
+      historicalData.value = []
+    } finally {
+      loading.value = false
     }
   }
 
   return {
-    state,
-    fetchPriceData
+    data,
+    historicalData,
+    loading,
+    error,
+    currentPrice,
+    fetchCurrentPrice,
+    fetchHistoricalData
   }
 } 

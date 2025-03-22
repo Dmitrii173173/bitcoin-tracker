@@ -13,17 +13,6 @@ interface BitcoinData {
 export function useHistoricalData() {
   const data = ref<BitcoinData[]>(bitcoinData)
   
-  const formattedData = computed(() => {
-    return data.value.map(item => ({
-      x: new Date(item.date).getTime(),
-      y: item.close,
-      high: item.high,
-      low: item.low,
-      volume: item.volume,
-      open: item.open
-    }))
-  })
-
   const currentData = computed(() => {
     if (data.value.length === 0) return null
     return data.value[data.value.length - 1]
@@ -36,9 +25,33 @@ export function useHistoricalData() {
     return Number(((lastPrice - prevPrice) / prevPrice * 100).toFixed(2))
   })
 
+  const getDataByPeriod = (period: 'day' | 'week' | 'month' | 'year') => {
+    const now = new Date()
+    const dates = data.value.map(item => new Date(item.date))
+    const filteredData = data.value.filter(item => {
+      const date = new Date(item.date)
+      switch (period) {
+        case 'day':
+          return date.getDate() === now.getDate()
+        case 'week':
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+          return date >= weekAgo
+        case 'month':
+          return date.getMonth() === now.getMonth()
+        case 'year':
+          return date.getFullYear() === now.getFullYear()
+        default:
+          return true
+      }
+    })
+
+    return filteredData
+  }
+
   return {
-    data: formattedData,
+    data,
     currentData,
-    priceChange
+    priceChange,
+    getDataByPeriod
   }
 } 

@@ -1,7 +1,7 @@
 <template>
   <div class="page-container">
     <div class="charts-grid">
-      <!-- Левый график -->
+      <!-- Mock Data Chart -->
       <div class="chart-container">
         <div class="content-wrapper">
           <div class="stats-panel">
@@ -19,10 +19,27 @@
               >
             </div>
             <div class="stat-row">
+              <span class="stat-label">24h Open</span>
+              <span class="stat-value"
+                >${{ formatNumber(mockCurrentData?.open || 0) }}</span
+              >
+            </div>
+            <div class="stat-row">
               <span class="stat-label">Volume</span>
               <span class="stat-value"
                 >${{ formatNumber(mockCurrentData?.volume || 0) }}</span
               >
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Change</span>
+              <span
+                :class="[
+                  'stat-value',
+                  mockPriceChange >= 0 ? 'positive' : 'negative',
+                ]"
+              >
+                {{ mockPriceChange >= 0 ? "+" : "" }}{{ mockPriceChange }}%
+              </span>
             </div>
           </div>
 
@@ -42,6 +59,16 @@
                   </span>
                 </div>
               </div>
+              <div class="timeframe-buttons">
+                <button
+                  v-for="period in periods"
+                  :key="period.value"
+                  :class="{ active: selectedMockPeriod === period.value }"
+                  @click="handleMockPeriodChange(period.value)"
+                >
+                  {{ period.label }}
+                </button>
+              </div>
             </div>
             <div class="chart-wrapper">
               <canvas ref="mockChartRef"></canvas>
@@ -50,29 +77,26 @@
         </div>
       </div>
 
-      <!-- Правый график -->
+      <!-- Coindesk Data Chart -->
       <div class="chart-container">
         <div class="content-wrapper">
           <div class="stats-panel">
             <h3>Market Statistics (Coindesk)</h3>
-            <div class="stat-row">
-              <span class="stat-label">24h High</span>
-              <span class="stat-value positive"
-                >${{ formatNumber(coindeskCurrentData?.high || 0) }}</span
-              >
+            <div v-if="!coindeskLoading">
+              <div class="stat-row">
+                <span class="stat-label">Current Price</span>
+                <span class="stat-value"
+                  >${{ formatNumber(coindeskCurrentPrice) }}</span
+                >
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Last Updated</span>
+                <span class="stat-value">{{
+                  coindeskData?.time?.updated || "None"
+                }}</span>
+              </div>
             </div>
-            <div class="stat-row">
-              <span class="stat-label">24h Low</span>
-              <span class="stat-value negative"
-                >${{ formatNumber(coindeskCurrentData?.low || 0) }}</span
-              >
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">Volume</span>
-              <span class="stat-value"
-                >${{ formatNumber(coindeskCurrentData?.volume || 0) }}</span
-              >
-            </div>
+            <div v-else>Loading...</div>
           </div>
 
           <div class="chart-section">
@@ -80,17 +104,18 @@
               <div class="price-header">
                 <h2>BTC/USD (Coindesk)</h2>
                 <div class="price-value">
-                  ${{ formatNumber(coindeskCurrentData?.close || 0) }}
-                  <span
-                    :class="[
-                      'change-badge',
-                      coindeskPriceChange >= 0 ? 'positive' : 'negative',
-                    ]"
-                  >
-                    {{ coindeskPriceChange >= 0 ? "+" : ""
-                    }}{{ coindeskPriceChange }}%
-                  </span>
+                  ${{ formatNumber(coindeskCurrentPrice) }}
                 </div>
+              </div>
+              <div class="timeframe-buttons">
+                <button
+                  v-for="period in periods"
+                  :key="period.value"
+                  :class="{ active: selectedCoindeskPeriod === period.value }"
+                  @click="handleCoindeskPeriodChange(period.value)"
+                >
+                  {{ period.label }}
+                </button>
               </div>
             </div>
             <div class="chart-wrapper">
@@ -104,23 +129,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useHistoricalData } from "~/composables/useHistoricalData";
-import "chartjs-adapter-date-fns"; // Добавляем адаптер для дат
+import { useCoindeskData } from "~/composables/useCoindeskData";
+import "chartjs-adapter-date-fns";
 
 const mockChartRef = ref<HTMLCanvasElement | null>(null);
 const coindeskChartRef = ref<HTMLCanvasElement | null>(null);
+let mockChart: any = null;
+let coindeskChart: any = null;
 
 const {
   data: mockData,
   currentData: mockCurrentData,
   priceChange: mockPriceChange,
+  getDataByPeriod,
 } = useHistoricalData();
 const {
   data: coindeskData,
-  currentData: coindeskCurrentData,
-  priceChange: coindeskPriceChange,
-} = useHistoricalData();
+  historicalData: coindeskHistoricalData,
+  loading: coindeskLoading,
+  currentPrice: coindeskCurrentPrice,
+  fetchCurrentPrice,
+  fetchHistoricalData,
+} = useCoindeskData();
+
+const periods = [
+  { label: "1D", value: "day" },
+  { label: "1W", value: "week" },
+  { label: "1M", value: "month" },
+  { label: "1Y", value: "year" },
+];
+
+const selectedMockPeriod = ref("day");
+const selectedCoindeskPeriod = ref("day");
 
 const formatNumber = (num: number) => {
   return new Intl.NumberFormat("en-US", {
@@ -129,7 +171,13 @@ const formatNumber = (num: number) => {
   }).format(num);
 };
 
-const createChart = (canvas: HTMLCanvasElement, data: any[], label: string) => {
+const createChart = async (
+  canvas: HTMLCanvasElement,
+  data: any[],
+  label: string
+) => {
+  const { default: Chart } = await import("chart.js/auto");
+
   return new Chart(canvas, {
     type: "line",
     data: {
@@ -182,17 +230,59 @@ const createChart = (canvas: HTMLCanvasElement, data: any[], label: string) => {
   });
 };
 
+const updateMockChart = async () => {
+  const filteredData = getDataByPeriod(selectedMockPeriod.value);
+  if (mockChart) {
+    mockChart.data.datasets[0].data = filteredData;
+    mockChart.update();
+  }
+};
+
+const updateCoindeskChart = async () => {
+  await fetchHistoricalData(selectedCoindeskPeriod.value);
+  if (coindeskChart) {
+    coindeskChart.data.datasets[0].data = coindeskHistoricalData.value;
+    coindeskChart.update();
+  }
+};
+
+const handleMockPeriodChange = (period: string) => {
+  selectedMockPeriod.value = period;
+  updateMockChart();
+};
+
+const handleCoindeskPeriodChange = (period: string) => {
+  selectedCoindeskPeriod.value = period;
+  updateCoindeskChart();
+};
+
 onMounted(async () => {
-  const { default: Chart } = await import("chart.js/auto");
+  await fetchCurrentPrice();
 
   if (mockChartRef.value) {
-    createChart(mockChartRef.value, mockData.value, "BTC/USDT");
+    mockChart = await createChart(
+      mockChartRef.value,
+      getDataByPeriod("day"),
+      "BTC/USDT"
+    );
   }
 
   if (coindeskChartRef.value) {
-    createChart(coindeskChartRef.value, coindeskData.value, "BTC/USD");
+    await fetchHistoricalData("day");
+    coindeskChart = await createChart(
+      coindeskChartRef.value,
+      coindeskHistoricalData.value,
+      "BTC/USD"
+    );
   }
+
+  // Обновляем данные Coindesk каждую минуту
+  setInterval(fetchCurrentPrice, 60000);
 });
+
+// Следим за изменениями периодов
+watch(selectedMockPeriod, updateMockChart);
+watch(selectedCoindeskPeriod, updateCoindeskChart);
 </script>
 
 <style scoped>
@@ -316,6 +406,27 @@ h2 {
   height: calc(100% - 100px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.timeframe-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.timeframe-buttons button {
+  padding: 8px 16px;
+  border: 1px solid var(--accent-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent-color);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.timeframe-buttons button.active {
+  background: var(--accent-color);
+  color: white;
 }
 
 @media (max-width: 1600px) {
