@@ -18,7 +18,7 @@
             </div>
           </div>
           <ClientOnly>
-            <canvas v-if="mockData.length" ref="mockChartRef"></canvas>
+            <canvas v-if="store.mockData.length" ref="mockChartRef"></canvas>
             <div v-else class="chart-placeholder">
               <p>Нет данных для отображения</p>
             </div>
@@ -52,7 +52,7 @@
               </tr>
             </tbody>
           </table>
-          <button @click="generateMockData" class="refresh-button">
+          <button @click="store.generateMockData" class="refresh-button">
             Обновить данные
           </button>
         </div>
@@ -77,7 +77,10 @@
             </div>
           </div>
           <ClientOnly>
-            <canvas v-if="coindeskData.length" ref="coindeskChartRef"></canvas>
+            <canvas
+              v-if="store.coindeskData.length"
+              ref="coindeskChartRef"
+            ></canvas>
             <div v-else class="chart-placeholder">
               <p>Нет данных для отображения</p>
             </div>
@@ -124,10 +127,12 @@
 import { ref, onMounted, computed, watch } from "vue";
 import Chart from "chart.js/auto";
 import "chartjs-adapter-date-fns";
+import { useMarketStore } from "~/stores/marketStore";
 
-// Отказываемся от использования Pinia
-const mockData = ref([]);
-const coindeskData = ref([]);
+// Хранилище данных
+const store = useMarketStore();
+
+// Данные
 const loading = ref(false);
 
 // Таймфреймы
@@ -150,11 +155,11 @@ const timeframes = [
 
 // Фильтрованные данные по таймфрейму
 const filteredMockData = computed(() => {
-  return filterDataByTimeframe(mockData.value, mockTimeframe.value);
+  return filterDataByTimeframe(store.mockData, mockTimeframe.value);
 });
 
 const filteredCoindeskData = computed(() => {
-  return filterDataByTimeframe(coindeskData.value, coindeskTimeframe.value);
+  return filterDataByTimeframe(store.coindeskData, coindeskTimeframe.value);
 });
 
 // Фильтрация данных по таймфрейму
@@ -196,7 +201,7 @@ function getColorClass(current, reference) {
   return "";
 }
 
-// Обновленная функция создания графика
+// Создание и обновление графиков
 function createChart(canvas, data, label) {
   if (!canvas) return null;
 
@@ -206,14 +211,14 @@ function createChart(canvas, data, label) {
   );
 
   return new Chart(canvas, {
-    type: "bar", // изменяем тип на bar вместо candlestick
+    type: "bar",
     data: {
       datasets: [
         {
           label: label,
           data: data.map((item) => ({
             x: new Date(item.date),
-            y: [item.open, item.high, item.low, item.close], // все значения для OHLC
+            y: [item.open, item.high, item.low, item.close],
           })),
           backgroundColor: colors,
           borderColor: colors,
@@ -268,29 +273,13 @@ function createChart(canvas, data, label) {
       },
       parsing: {
         xAxisKey: "x",
-        yAxisKey: "y[3]", // отображаем цену закрытия на основной оси
+        yAxisKey: "y[3]",
       },
     },
   });
 }
 
-// Преобразование таймфрейма в единицу времени для графика
-function timeframeToTimeUnit(timeframe) {
-  switch (timeframe) {
-    case "day":
-      return "hour";
-    case "week":
-      return "day";
-    case "month":
-      return "day";
-    case "year":
-      return "month";
-    default:
-      return "day";
-  }
-}
-
-// Обновленная функция для наблюдения за изменениями данных
+// Обновление графиков при изменении данных или таймфрейма
 watch(
   [filteredMockData, mockTimeframe],
   () => {
@@ -344,47 +333,19 @@ watch(
   { deep: true }
 );
 
-// Генерация Mock данных
-function generateMockData() {
-  try {
-    const data = [];
-    const now = new Date();
-
-    data.push({
-      date: new Date("2025-02-20"),
-      open: 30149.2,
-      close: 28568.72,
-      high: 31010.27,
-      low: 27905.33,
-      volume: 1744.95,
-    });
-
-    data.push({
-      date: new Date("2025-02-21"),
-      open: 44824.49,
-      close: 46378.91,
-      high: 47089.52,
-      low: 44775.58,
-      volume: 3165.6,
-    });
-
-    for (let i = 2; i < 24; i++) {
-      const date = new Date(now.getTime() - (23 - i) * 3600000);
-      const basePrice = 40000 + Math.random() * 2000;
-
-      data.push({
-        date,
-        open: basePrice,
-        high: basePrice + Math.random() * 200,
-        low: basePrice - Math.random() * 200,
-        close: basePrice + (Math.random() - 0.5) * 400,
-        volume: Math.random() * 1000000,
-      });
-    }
-
-    mockData.value = data;
-  } catch (err) {
-    console.error("Error generating mock data:", err);
+// Преобразование таймфрейма в единицу времени для графика
+function timeframeToTimeUnit(timeframe) {
+  switch (timeframe) {
+    case "day":
+      return "hour";
+    case "week":
+      return "day";
+    case "month":
+      return "day";
+    case "year":
+      return "month";
+    default:
+      return "day";
   }
 }
 
@@ -392,28 +353,7 @@ function generateMockData() {
 async function fetchCoindeskData() {
   try {
     loading.value = true;
-    const response = await fetch(
-      "https://api.coindesk.com/v1/bpi/currentprice.json"
-    );
-    const data = await response.json();
-
-    const currentPrice = data.bpi.USD.rate_float;
-    const now = new Date();
-
-    const newDataPoint = {
-      date: now,
-      open: currentPrice * 0.999,
-      high: currentPrice * 1.001,
-      low: currentPrice * 0.998,
-      close: currentPrice,
-      volume: Math.random() * 1000000,
-    };
-
-    if (coindeskData.value.length === 0) {
-      coindeskData.value = [newDataPoint];
-    } else {
-      coindeskData.value = [newDataPoint, ...coindeskData.value.slice(0, 23)];
-    }
+    await store.fetchCoindeskData();
   } catch (err) {
     console.error("Error fetching Coindesk data:", err);
   } finally {
@@ -423,12 +363,12 @@ async function fetchCoindeskData() {
 
 // Инициализация при монтировании
 onMounted(() => {
-  generateMockData();
-  fetchCoindeskData();
+  store.generateMockData();
+  store.fetchCoindeskData();
 
   // Создаем графики после получения данных
   setTimeout(() => {
-    if (mockChartRef.value && mockData.value.length) {
+    if (mockChartRef.value && store.mockData.length) {
       mockChart = createChart(
         mockChartRef.value,
         filteredMockData.value,
@@ -436,7 +376,7 @@ onMounted(() => {
       );
     }
 
-    if (coindeskChartRef.value && coindeskData.value.length) {
+    if (coindeskChartRef.value && store.coindeskData.length) {
       coindeskChart = createChart(
         coindeskChartRef.value,
         filteredCoindeskData.value,
@@ -447,7 +387,7 @@ onMounted(() => {
 
   // Обновляем данные каждую минуту
   setInterval(() => {
-    fetchCoindeskData();
+    store.fetchCoindeskData();
   }, 60000);
 });
 </script>

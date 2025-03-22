@@ -16,47 +16,27 @@ export const useMarketStore = defineStore('market', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  function generateMockData() {
+  async function generateMockData() {
     try {
-      const data: MarketData[] = []
-      const now = new Date()
+      loading.value = true
+      const response = await fetch('/data/bitcoin_data.json')
+      const jsonData = await response.json()
       
-      data.push({
-        date: new Date('2025-02-20'),
-        open: 30149.2,
-        close: 28568.72,
-        high: 31010.27,
-        low: 27905.33,
-        volume: 1744.95
-      })
-
-      data.push({
-        date: new Date('2025-02-21'),
-        open: 44824.49,
-        close: 46378.91,
-        high: 47089.52,
-        low: 44775.58,
-        volume: 3165.6
-      })
-
-      for (let i = 2; i < 24; i++) {
-        const date = new Date(now.getTime() - (23 - i) * 3600000)
-        const basePrice = 40000 + Math.random() * 2000
-        
-        data.push({
-          date,
-          open: basePrice,
-          high: basePrice + Math.random() * 200,
-          low: basePrice - Math.random() * 200,
-          close: basePrice + (Math.random() - 0.5) * 400,
-          volume: Math.random() * 1000000
-        })
-      }
+      const data = jsonData.map(item => ({
+        date: new Date(item.date),
+        open: parseFloat(item.open),
+        high: parseFloat(item.high),
+        low: parseFloat(item.low),
+        close: parseFloat(item.close),
+        volume: parseFloat(item.volume)
+      }))
       
       mockData.value = data
     } catch (err) {
-      console.error('Error generating mock data:', err)
-      error.value = 'Error generating mock data'
+      console.error('Ошибка при загрузке данных из файла:', err)
+      error.value = 'Ошибка при загрузке данных'
+    } finally {
+      loading.value = false
     }
   }
 
