@@ -1,3 +1,4 @@
+// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   ssr: false,
   app: {
@@ -16,5 +17,9 @@ export default defineNuxtConfig({
   },
   nitro: {
     preset: 'node-server'
+  },
+  typescript: {
+    strict: true,
+    typeCheck: true
   }
 })
