@@ -18,131 +18,88 @@
         </div>
       </div>
       <div class="chart-wrapper">
-        <canvas ref="chartRef" width="400" height="400"></canvas>
+        <apexchart
+          type="line"
+          height="400"
+          :options="chartOptions"
+          :series="series"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-import Chart from "chart.js/auto";
+import { ref, onMounted } from "vue";
+import VueApexCharts from "vue3-apexcharts";
 
-const chartRef = ref<HTMLCanvasElement | null>(null);
-const chart = ref<Chart | null>(null);
 const periods = ["1H", "24H", "7D", "1M"];
 const selectedPeriod = ref("24H");
 
-// Уменьшаем количество мок-данных до 12 точек
 const mockData = Array.from({ length: 12 }, (_, i) => ({
   time: new Date(Date.now() - i * 3600000).toLocaleTimeString(),
-  price: 41000 + Math.sin(i) * 500, // Более плавные данные
+  price: 41000 + Math.sin(i) * 500,
 }));
 
 const currentPrice = ref(mockData[0].price);
 
-const createChart = () => {
-  if (!chartRef.value) return;
-
-  const ctx = chartRef.value.getContext("2d");
-  if (!ctx) return;
-
-  if (chart.value) {
-    chart.value.destroy();
-  }
-
-  chart.value = new Chart(ctx, {
+const chartOptions = {
+  chart: {
     type: "line",
-    data: {
-      labels: mockData.map((d) => d.time).reverse(),
-      datasets: [
-        {
-          data: mockData.map((d) => d.price).reverse(),
-          borderColor: "#02C076", // Зеленый цвет Binance
-          backgroundColor: "rgba(2, 192, 118, 0.1)",
-          fill: true,
-          tension: 0.4,
-          pointRadius: 0,
-          borderWidth: 2,
-        },
-      ],
+    height: 400,
+    foreColor: "#848E9C",
+    toolbar: { show: false },
+    background: "transparent",
+  },
+  stroke: {
+    curve: "smooth",
+    width: 2,
+  },
+  grid: {
+    borderColor: "rgba(255, 255, 255, 0.05)",
+    padding: { left: 10, right: 10 },
+  },
+  xaxis: {
+    categories: mockData.map((d) => d.time).reverse(),
+    labels: {
+      style: { colors: "#848E9C" },
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      aspectRatio: 2,
-      interaction: {
-        intersect: false,
-        mode: "index",
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: "rgba(17, 25, 45, 0.9)",
-          borderColor: "rgba(255, 255, 255, 0.1)",
-          borderWidth: 1,
-          titleColor: "#fff",
-          bodyColor: "#fff",
-          padding: 12,
-          displayColors: false,
-        },
-      },
-      scales: {
-        y: {
-          grid: {
-            color: "rgba(255, 255, 255, 0.05)",
-            drawBorder: false,
-          },
-          ticks: {
-            color: "rgba(255, 255, 255, 0.5)",
-            padding: 10,
-          },
-          border: {
-            display: false,
-          },
-        },
-        x: {
-          grid: {
-            color: "rgba(255, 255, 255, 0.05)",
-            drawBorder: false,
-          },
-          ticks: {
-            color: "rgba(255, 255, 255, 0.5)",
-            padding: 10,
-            maxRotation: 0,
-          },
-          border: {
-            display: false,
-          },
-        },
-      },
+  },
+  yaxis: {
+    labels: {
+      style: { colors: "#848E9C" },
     },
-  });
+  },
+  tooltip: {
+    theme: "dark",
+  },
+  fill: {
+    type: "gradient",
+    gradient: {
+      shade: "dark",
+      type: "vertical",
+      opacityFrom: 0.5,
+      opacityTo: 0,
+    },
+  },
 };
+
+const series = [
+  {
+    name: "BTC/USDT",
+    data: mockData.map((d) => d.price).reverse(),
+  },
+];
 
 const changePeriod = (period: string) => {
   selectedPeriod.value = period;
-  createChart();
 };
-
-onMounted(() => {
-  createChart();
-});
-
-onUnmounted(() => {
-  if (chart.value) {
-    chart.value.destroy();
-  }
-});
 </script>
 
 <style scoped>
 .chart-outer-container {
   width: 100%;
-  max-width: 1200px;
   height: 500px;
-  max-height: 500px;
-  margin: 0 auto;
   overflow: hidden;
 }
 
@@ -150,11 +107,8 @@ onUnmounted(() => {
   background-color: #0b0e11;
   border-radius: 8px;
   padding: 20px;
-  height: 100%;
-  max-height: 500px;
+  height: 500px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  flex-direction: column;
 }
 
 .chart-header {

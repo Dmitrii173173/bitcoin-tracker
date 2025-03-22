@@ -2,9 +2,8 @@
   "name": "bitcoin-tracker",
   "private": true,
   "scripts": {
-    "start": "cd frontend && npm start",
-    "build": "cd frontend && npm run build",
-    "dev": "cd frontend && npm run dev"
+    "build": "npm install && npm run build --prefix frontend",
+    "start": "npm start --prefix frontend"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",

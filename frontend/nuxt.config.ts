@@ -27,5 +27,8 @@ export default defineNuxtConfig({
     define: {
       'window.global': {}
     }
-  }
+  },
+  modules: [
+    'vue3-apexcharts'
+  ]
 })
