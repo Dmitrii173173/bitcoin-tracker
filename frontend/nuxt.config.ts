@@ -1,6 +1,9 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   ssr: true,
+  modules: [
+    '@pinia/nuxt'
+  ],
   app: {
     head: {
       title: 'Bitcoin Tracker',
@@ -15,16 +18,13 @@ export default defineNuxtConfig({
       backendUrl: process.env.BACKEND_URL || 'http://localhost:3001'
     }
   },
-  nitro: {
-    preset: 'node-server'
-  },
   typescript: {
     strict: false,
     typeCheck: false
   },
-  modules: [
-    '@pinia/nuxt'
-  ],
+  nitro: {
+    preset: 'node-server'
+  },
   // Добавляем конфигурацию для Pinia
   pinia: {
     autoImports: ['defineStore', 'storeToRefs']

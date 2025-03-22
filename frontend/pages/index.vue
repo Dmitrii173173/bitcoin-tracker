@@ -45,6 +45,11 @@ onMounted(() => {
     store.generateMockData();
   }
   store.fetchCoindeskData();
+
+  // Обновляем данные каждую минуту
+  setInterval(() => {
+    store.fetchCoindeskData();
+  }, 60000);
 });
 </script>
 
