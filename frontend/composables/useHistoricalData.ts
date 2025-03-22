@@ -25,9 +25,8 @@ export function useHistoricalData() {
     return Number(((lastPrice - prevPrice) / prevPrice * 100).toFixed(2))
   })
 
-  const getDataByPeriod = (period: 'day' | 'week' | 'month' | 'year') => {
+  const getCandlestickData = (period: 'day' | 'week' | 'month' | 'year') => {
     const now = new Date()
-    const dates = data.value.map(item => new Date(item.date))
     const filteredData = data.value.filter(item => {
       const date = new Date(item.date)
       switch (period) {
@@ -45,13 +44,35 @@ export function useHistoricalData() {
       }
     })
 
-    return filteredData
+    return {
+      candlesticks: filteredData.map(item => ({
+        x: new Date(item.date).getTime(),
+        o: item.open,
+        h: item.high,
+        l: item.low,
+        c: item.close
+      })),
+      volumes: filteredData.map(item => ({
+        x: new Date(item.date).getTime(),
+        y: item.volume,
+        color: item.close >= item.open ? 'rgba(52, 199, 89, 0.3)' : 'rgba(255, 59, 48, 0.3)'
+      }))
+    }
+  }
+
+  const getTableData = () => {
+    return data.value.map(item => ({
+      ...item,
+      isPositive: item.close >= item.open,
+      volumePercentage: (item.volume / Math.max(...data.value.map(d => d.volume))) * 100
+    }))
   }
 
   return {
     data,
     currentData,
     priceChange,
-    getDataByPeriod
+    getCandlestickData,
+    getTableData
   }
 } 

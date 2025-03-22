@@ -6,40 +6,43 @@
         <div class="content-wrapper">
           <div class="stats-panel">
             <h3>Market Statistics (Mock)</h3>
-            <div class="stat-row">
-              <span class="stat-label">24h High</span>
-              <span class="stat-value positive"
-                >${{ formatNumber(mockCurrentData?.high || 0) }}</span
-              >
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">24h Low</span>
-              <span class="stat-value negative"
-                >${{ formatNumber(mockCurrentData?.low || 0) }}</span
-              >
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">24h Open</span>
-              <span class="stat-value"
-                >${{ formatNumber(mockCurrentData?.open || 0) }}</span
-              >
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">Volume</span>
-              <span class="stat-value"
-                >${{ formatNumber(mockCurrentData?.volume || 0) }}</span
-              >
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">Change</span>
-              <span
-                :class="[
-                  'stat-value',
-                  mockPriceChange >= 0 ? 'positive' : 'negative',
-                ]"
-              >
-                {{ mockPriceChange >= 0 ? "+" : "" }}{{ mockPriceChange }}%
-              </span>
+            <div class="data-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Open</th>
+                    <th>Close</th>
+                    <th>High</th>
+                    <th>Low</th>
+                    <th>Volume</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="row in tableData"
+                    :key="row.date"
+                    :class="{
+                      positive: row.isPositive,
+                      negative: !row.isPositive,
+                    }"
+                  >
+                    <td>{{ formatDate(row.date) }}</td>
+                    <td>${{ formatNumber(row.open) }}</td>
+                    <td>${{ formatNumber(row.close) }}</td>
+                    <td>${{ formatNumber(row.high) }}</td>
+                    <td>${{ formatNumber(row.low) }}</td>
+                    <td>
+                      <div
+                        class="volume-bar"
+                        :style="{ width: `${row.volumePercentage}%` }"
+                      >
+                        {{ formatNumber(row.volume) }}
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -72,6 +75,7 @@
             </div>
             <div class="chart-wrapper">
               <canvas ref="mockChartRef"></canvas>
+              <canvas ref="mockVolumeChartRef"></canvas>
             </div>
           </div>
         </div>
@@ -129,21 +133,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { useHistoricalData } from "~/composables/useHistoricalData";
 import { useCoindeskData } from "~/composables/useCoindeskData";
 import "chartjs-adapter-date-fns";
 
 const mockChartRef = ref<HTMLCanvasElement | null>(null);
+const mockVolumeChartRef = ref<HTMLCanvasElement | null>(null);
 const coindeskChartRef = ref<HTMLCanvasElement | null>(null);
 let mockChart: any = null;
+let mockVolumeChart: any = null;
 let coindeskChart: any = null;
 
 const {
   data: mockData,
   currentData: mockCurrentData,
   priceChange: mockPriceChange,
-  getDataByPeriod,
+  getCandlestickData,
+  getTableData,
 } = useHistoricalData();
 const {
   data: coindeskData,
@@ -164,6 +171,8 @@ const periods = [
 const selectedMockPeriod = ref("day");
 const selectedCoindeskPeriod = ref("day");
 
+const tableData = computed(() => getTableData());
+
 const formatNumber = (num: number) => {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
@@ -171,26 +180,30 @@ const formatNumber = (num: number) => {
   }).format(num);
 };
 
-const createChart = async (
+const formatDate = (dateStr: string) => {
+  return new Date(dateStr).toLocaleDateString();
+};
+
+const createCandlestickChart = async (
   canvas: HTMLCanvasElement,
-  data: any[],
-  label: string
+  volumeCanvas: HTMLCanvasElement,
+  data: any
 ) => {
   const { default: Chart } = await import("chart.js/auto");
 
-  return new Chart(canvas, {
-    type: "line",
+  // Создаем график свечей
+  const candlestickChart = new Chart(canvas, {
+    type: "candlestick",
     data: {
       datasets: [
         {
-          label,
-          data,
-          borderColor: "#007AFF",
-          backgroundColor: "rgba(0, 122, 255, 0.1)",
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4,
-          pointRadius: 0,
+          label: "BTC/USDT",
+          data: data.candlesticks,
+          color: {
+            up: "#34c759",
+            down: "#ff3b30",
+            unchanged: "#86868b",
+          },
         },
       ],
     },
@@ -203,16 +216,56 @@ const createChart = async (
           time: {
             unit: "day",
           },
-          grid: {
-            display: false,
-          },
         },
         y: {
+          position: "right",
           grid: {
             color: "rgba(0, 0, 0, 0.05)",
           },
-          ticks: {
-            callback: (value) => `$${formatNumber(value as number)}`,
+        },
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (context: any) => {
+              const point = context.raw;
+              return [
+                `Open: $${formatNumber(point.o)}`,
+                `High: $${formatNumber(point.h)}`,
+                `Low: $${formatNumber(point.l)}`,
+                `Close: $${formatNumber(point.c)}`,
+              ];
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // Создаем график объемов
+  const volumeChart = new Chart(volumeCanvas, {
+    type: "bar",
+    data: {
+      datasets: [
+        {
+          label: "Volume",
+          data: data.volumes,
+          backgroundColor: data.volumes.map((v: any) => v.color),
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          type: "time",
+          display: false,
+        },
+        y: {
+          position: "left",
+          grid: {
+            display: false,
           },
         },
       },
@@ -220,35 +273,26 @@ const createChart = async (
         legend: {
           display: false,
         },
-        tooltip: {
-          callbacks: {
-            label: (context) => `$${formatNumber(context.parsed.y)}`,
-          },
-        },
       },
     },
   });
+
+  return { candlestickChart, volumeChart };
 };
 
-const updateMockChart = async () => {
-  const filteredData = getDataByPeriod(selectedMockPeriod.value);
-  if (mockChart) {
-    mockChart.data.datasets[0].data = filteredData;
+const updateCharts = async () => {
+  const data = getCandlestickData(selectedMockPeriod.value);
+  if (mockChart && mockVolumeChart) {
+    mockChart.data.datasets[0].data = data.candlesticks;
+    mockVolumeChart.data.datasets[0].data = data.volumes;
     mockChart.update();
-  }
-};
-
-const updateCoindeskChart = async () => {
-  await fetchHistoricalData(selectedCoindeskPeriod.value);
-  if (coindeskChart) {
-    coindeskChart.data.datasets[0].data = coindeskHistoricalData.value;
-    coindeskChart.update();
+    mockVolumeChart.update();
   }
 };
 
 const handleMockPeriodChange = (period: string) => {
   selectedMockPeriod.value = period;
-  updateMockChart();
+  updateCharts();
 };
 
 const handleCoindeskPeriodChange = (period: string) => {
@@ -259,12 +303,15 @@ const handleCoindeskPeriodChange = (period: string) => {
 onMounted(async () => {
   await fetchCurrentPrice();
 
-  if (mockChartRef.value) {
-    mockChart = await createChart(
+  if (mockChartRef.value && mockVolumeChartRef.value) {
+    const data = getCandlestickData("day");
+    const charts = await createCandlestickChart(
       mockChartRef.value,
-      getDataByPeriod("day"),
-      "BTC/USDT"
+      mockVolumeChartRef.value,
+      data
     );
+    mockChart = charts.candlestickChart;
+    mockVolumeChart = charts.volumeChart;
   }
 
   if (coindeskChartRef.value) {
@@ -281,7 +328,7 @@ onMounted(async () => {
 });
 
 // Следим за изменениями периодов
-watch(selectedMockPeriod, updateMockChart);
+watch(selectedMockPeriod, updateCharts);
 watch(selectedCoindeskPeriod, updateCoindeskChart);
 </script>
 
@@ -400,12 +447,9 @@ h2 {
 }
 
 .chart-wrapper {
-  background: var(--blur-background);
-  border-radius: 20px;
-  padding: 24px;
-  height: calc(100% - 100px);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  display: grid;
+  grid-template-rows: 7fr 3fr;
+  gap: 20px;
 }
 
 .timeframe-buttons {
@@ -444,5 +488,49 @@ h2 {
   .price-value {
     font-size: 36px;
   }
+}
+
+.data-table {
+  margin-top: 20px;
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 12px;
+  text-align: right;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+td:first-child {
+  text-align: left;
+}
+
+.volume-bar {
+  background: var(--accent-color);
+  opacity: 0.2;
+  padding: 4px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+tr.positive td {
+  color: #34c759;
+}
+
+tr.negative td {
+  color: #ff3b30;
 }
 </style>
