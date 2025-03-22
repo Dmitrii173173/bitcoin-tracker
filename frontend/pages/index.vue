@@ -201,23 +201,25 @@ function createChart(canvas, data, label) {
   if (!canvas) return null;
 
   // Создаем цвета для баров на основе open/close соотношения
-  const colors = data.map(item => item.close >= item.open ? '#02C076' : '#F6465D');
+  const colors = data.map((item) =>
+    item.close >= item.open ? "#02C076" : "#F6465D"
+  );
 
   return new Chart(canvas, {
-    type: 'bar', // изменяем тип на bar вместо candlestick
+    type: "bar", // изменяем тип на bar вместо candlestick
     data: {
       datasets: [
         {
           label: label,
-          data: data.map(item => ({
+          data: data.map((item) => ({
             x: new Date(item.date),
             y: [item.open, item.high, item.low, item.close], // все значения для OHLC
           })),
           backgroundColor: colors,
           borderColor: colors,
-          borderWidth: 1
-        }
-      ]
+          borderWidth: 1,
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -234,7 +236,7 @@ function createChart(canvas, data, label) {
                 `Открытие: $${values[0].toFixed(2)}`,
                 `Максимум: $${values[1].toFixed(2)}`,
                 `Минимум: $${values[2].toFixed(2)}`,
-                `Закрытие: $${values[3].toFixed(2)}`
+                `Закрытие: $${values[3].toFixed(2)}`,
               ];
             },
           },
@@ -242,32 +244,32 @@ function createChart(canvas, data, label) {
       },
       scales: {
         x: {
-          type: 'time',
+          type: "time",
           time: {
             unit: timeframeToTimeUnit(mockTimeframe.value),
           },
           ticks: {
-            color: 'rgba(255, 255, 255, 0.7)',
+            color: "rgba(255, 255, 255, 0.7)",
           },
           grid: {
-            color: 'rgba(255, 255, 255, 0.1)',
+            color: "rgba(255, 255, 255, 0.1)",
           },
         },
         y: {
-          position: 'right',
+          position: "right",
           ticks: {
-            color: 'rgba(255, 255, 255, 0.7)',
+            color: "rgba(255, 255, 255, 0.7)",
             callback: (value) => `$${value.toFixed(2)}`,
           },
           grid: {
-            color: 'rgba(255, 255, 255, 0.1)',
+            color: "rgba(255, 255, 255, 0.1)",
           },
         },
       },
       parsing: {
-        xAxisKey: 'x',
-        yAxisKey: 'y[3]' // отображаем цену закрытия на основной оси
-      }
+        xAxisKey: "x",
+        yAxisKey: "y[3]", // отображаем цену закрытия на основной оси
+      },
     },
   });
 }
@@ -293,18 +295,18 @@ watch(
   [filteredMockData, mockTimeframe],
   () => {
     if (mockChart) {
-      const colors = filteredMockData.value.map(item => 
-        item.close >= item.open ? '#02C076' : '#F6465D'
+      const colors = filteredMockData.value.map((item) =>
+        item.close >= item.open ? "#02C076" : "#F6465D"
       );
-      
+
       mockChart.data.datasets[0].data = filteredMockData.value.map((item) => ({
         x: new Date(item.date),
         y: [item.open, item.high, item.low, item.close],
       }));
-      
+
       mockChart.data.datasets[0].backgroundColor = colors;
       mockChart.data.datasets[0].borderColor = colors;
-      
+
       mockChart.options.scales.x.time.unit = timeframeToTimeUnit(
         mockTimeframe.value
       );
@@ -319,18 +321,20 @@ watch(
   [filteredCoindeskData, coindeskTimeframe],
   () => {
     if (coindeskChart) {
-      const colors = filteredCoindeskData.value.map(item => 
-        item.close >= item.open ? '#02C076' : '#F6465D'
+      const colors = filteredCoindeskData.value.map((item) =>
+        item.close >= item.open ? "#02C076" : "#F6465D"
       );
-      
-      coindeskChart.data.datasets[0].data = filteredCoindeskData.value.map((item) => ({
-        x: new Date(item.date),
-        y: [item.open, item.high, item.low, item.close],
-      }));
-      
+
+      coindeskChart.data.datasets[0].data = filteredCoindeskData.value.map(
+        (item) => ({
+          x: new Date(item.date),
+          y: [item.open, item.high, item.low, item.close],
+        })
+      );
+
       coindeskChart.data.datasets[0].backgroundColor = colors;
       coindeskChart.data.datasets[0].borderColor = colors;
-      
+
       coindeskChart.options.scales.x.time.unit = timeframeToTimeUnit(
         coindeskTimeframe.value
       );
@@ -583,10 +587,6 @@ th {
 
   .content-wrapper > * {
     flex: 1;
-  }
-}
-</style>
-
   }
 }
 </style>
