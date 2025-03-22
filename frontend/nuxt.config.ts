@@ -22,5 +22,7 @@ export default defineNuxtConfig({
     strict: false,
     typeCheck: false
   },
-  modules: []
+  modules: [
+    '@pinia/nuxt',
+  ]
 })
