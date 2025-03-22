@@ -14,24 +14,12 @@
       </div>
     </div>
 
-    <div class="chart-wrapper">
-      <canvas ref="candlestickChart"></canvas>
-      <canvas ref="volumeChart"></canvas>
-    </div>
-
-    <div v-if="hoveredData" class="tooltip">
-      <div>Date: {{ formatDate(hoveredData.date) }}</div>
-      <div>Open: ${{ formatNumber(hoveredData.open) }}</div>
-      <div>High: ${{ formatNumber(hoveredData.high) }}</div>
-      <div>Low: ${{ formatNumber(hoveredData.low) }}</div>
-      <div>Close: ${{ formatNumber(hoveredData.close) }}</div>
-      <div>Volume: {{ formatVolume(hoveredData.volume) }}</div>
-    </div>
+    <div class="chart-wrapper"><canvas ref="chartRef"></canvas></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch } from "vue";
 import {
   Chart,
   CategoryScale,
@@ -40,11 +28,12 @@ import {
   LineElement,
   BarElement,
   TimeScale,
-  Tooltip
-} from 'chart.js';
-import 'chartjs-adapter-date-fns';
+  Tooltip,
+  Legend,
+} from "chart.js";
+import "chartjs-adapter-date-fns";
 
-// Регистрируем необходимые компоненты
+// Регистрируем компоненты Chart.js
 Chart.register(
   CategoryScale,
   LinearScale,
@@ -52,154 +41,126 @@ Chart.register(
   LineElement,
   BarElement,
   TimeScale,
-  Tooltip
+  Tooltip,
+  Legend
 );
 
 const props = defineProps<{
   title: string;
   data: any[];
-  isMock?: boolean;
+  isMock: boolean;
 }>();
 
-const candlestickChart = ref<HTMLCanvasElement | null>(null);
-const volumeChart = ref<HTMLCanvasElement | null>(null);
-const selectedTimeframe = ref('24H');
-const hoveredData = ref(null);
+const chartRef = ref<HTMLCanvasElement | null>(null);
+const selectedTimeframe = ref("24H");
+let chart: Chart | null = null;
 
 const timeframes = [
-  { label: '1H', value: '1H' },
-  { label: '24H', value: '24H' },
-  { label: '7D', value: '7D' },
-  { label: '1M', value: '1M' }
+  { label: "1H", value: "1H" },
+  { label: "24H", value: "24H" },
+  { label: "7D", value: "7D" },
+  { label: "1M", value: "1M" },
 ];
 
-const formatNumber = (value: number) => {
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
-};
+const createChart = () => {
+  if (!chartRef.value) return;
 
-const formatDate = (date: Date) => {
-  return date.toLocaleString();
-};
+  const ctx = chartRef.value.getContext("2d");
+  if (!ctx) return;
 
-const formatVolume = (volume: number) => {
-  if (volume >= 1000000) {
-    return `${(volume / 1000000).toFixed(2)}M`;
-  }
-  if (volume >= 1000) {
-    return `${(volume / 1000).toFixed(2)}K`;
-  }
-  return volume.toString();
-};
-
-const createCharts = () => {
-  if (!candlestickChart.value || !volumeChart.value) return;
-
-  const candleCtx = candlestickChart.value.getContext('2d');
-  const volumeCtx = volumeChart.value.getContext('2d');
-
-  if (!candleCtx || !volumeCtx) return;
-
-  const candleChart = new Chart(candleCtx, {
-    type: 'line',
+  chart = new Chart(ctx, {
+    type: "line",
     data: {
-      datasets: [{
-        label: props.title,
-        data: props.data.map(item => ({
-          x: new Date(item.date),
-          y: item.close
-        })),
-        borderColor: '#007AFF',
-        backgroundColor: 'rgba(0, 122, 255, 0.1)',
-        fill: true
-      }]
+      datasets: [
+        {
+          label: props.title,
+          data: props.data.map((item) => ({
+            x: new Date(item.date),
+            y: item.close,
+          })),
+          borderColor: "#007AFF",
+          backgroundColor: "rgba(0, 122, 255, 0.1)",
+          fill: true,
+          tension: 0.4,
+        },
+      ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       interaction: {
         intersect: false,
-        mode: 'index'
+        mode: "index",
       },
       scales: {
         x: {
-          type: 'time',
+          type: "time",
           time: {
-            unit: 'hour'
-          }
+            unit: "hour",
+            displayFormats: {
+              hour: "HH:mm",
+              day: "MMM d",
+              week: "MMM d",
+              month: "MMM yyyy",
+            },
+          },
+          grid: {
+            display: false,
+          },
         },
         y: {
-          position: 'right',
+          position: "right",
           title: {
             display: true,
-            text: 'Price (USD)'
-          }
-        }
-      }
-    }
-  });
-
-  const volumeChart = new Chart(volumeCtx, {
-    type: 'bar',
-    data: {
-      datasets: [{
-        label: 'Volume',
-        data: props.data.map(item => ({
-          x: new Date(item.date),
-          y: item.volume,
-          color: item.close >= item.open ? '#34C759' : '#FF3B30'
-        })),
-        backgroundColor: (context: any) => {
-          return context.raw?.color || '#8E8E93';
-        }
-      }]
+            text: "Price (USD)",
+          },
+          grid: {
+            color: "rgba(0, 0, 0, 0.05)",
+          },
+        },
+      },
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => `$${context.parsed.y.toFixed(2)}`,
+          },
+        },
+      },
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          display: false
-        },
-        y: {
-          position: 'left',
-          title: {
-            display: true,
-            text: 'Volume'
-          }
-        }
-      }
-    }
   });
+};
 
-  return { candleChart, volumeChart };
+const updateChart = () => {
+  if (!chart) return;
+
+  chart.data.datasets[0].data = props.data.map((item) => ({
+    x: new Date(item.date),
+    y: item.close,
+  }));
+
+  chart.update();
 };
 
 const changeTimeframe = (timeframe: string) => {
   selectedTimeframe.value = timeframe;
-  // Здесь добавить логику обновления данных в зависимости от таймфрейма
+  // Здесь можно добавить логику фильтрации данных по временному интервалу
+  updateChart();
 };
 
+watch(
+  () => props.data,
+  () => {
+    updateChart();
+  },
+  { deep: true }
+);
+
 onMounted(() => {
-  const charts = createCharts();
-
-  // Сохраняем состояние в localStorage
-  if (charts) {
-    localStorage.setItem('chartState', JSON.stringify({
-      timeframe: selectedTimeframe.value,
-      lastUpdate: new Date().toISOString()
-    }));
-  }
+  createChart();
 });
-
-// Восстанавливаем состояние при загрузке
-const savedState = localStorage.getItem('chartState');
-if (savedState) {
-  const { timeframe } = JSON.parse(savedState);
-  selectedTimeframe.value = timeframe;
-}
 </script>
 
 <style scoped>
@@ -207,7 +168,7 @@ if (savedState) {
   background: var(--card-background);
   border-radius: 16px;
   padding: 20px;
-  height: 100%;
+  box-shadow: var(--shadow-sm);
 }
 
 .chart-header {
@@ -218,10 +179,8 @@ if (savedState) {
 }
 
 .chart-wrapper {
-  display: grid;
-  grid-template-rows: 7fr 3fr;
-  gap: 20px;
-  height: calc(100% - 60px);
+  height: 400px;
+  position: relative;
 }
 
 .timeframe-selector {
@@ -242,16 +201,6 @@ if (savedState) {
 .timeframe-selector button.active {
   background: var(--accent-color);
   color: white;
-}
-
-.tooltip {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 8px;
-  padding: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  pointer-events: none;
-  z-index: 100;
 }
 
 @media (max-width: 768px) {
