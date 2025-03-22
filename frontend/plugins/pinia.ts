@@ -1,8 +1,14 @@
 import { defineNuxtPlugin } from '#app'
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia } from 'pinia'
 
-export default defineNuxtPlugin(nuxtApp => {
+export default defineNuxtPlugin((nuxtApp) => {
   const pinia = createPinia()
-  setActivePinia(pinia)
   nuxtApp.vueApp.use(pinia)
+  
+  // Важно: возвращаем provide для правильной интеграции с Nuxt
+  return {
+    provide: {
+      pinia
+    }
+  }
 }) 
