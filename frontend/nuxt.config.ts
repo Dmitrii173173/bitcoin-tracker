@@ -1,8 +1,9 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   ssr: false,
-  // Удаляем модуль Pinia
-  modules: [],
+  modules: [
+    '@pinia/nuxt'
+  ],
   app: {
     head: {
       title: 'Bitcoin Tracker',
@@ -16,6 +17,14 @@ export default defineNuxtConfig({
     public: {
       backendUrl: process.env.BACKEND_URL || 'http://localhost:3001'
     }
+  },
+  // Важное исправление для Vite:
+  build: {
+    transpile: ['pinia']
+  },
+  // Правильная конфигурация Pinia
+  pinia: {
+    autoImports: ['defineStore']
   },
   typescript: {
     strict: false,
