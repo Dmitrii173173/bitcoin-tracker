@@ -1,13 +1,17 @@
 <template>
-  <div>
+  <div class="container">
     <h1>Bitcoin Tracker</h1>
-    <PriceChart />
+    <div class="chart-wrapper">
+      <MockPrice />
+      <CoindeskPrice />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from "vue";
-import PriceChart from "~/components/PriceChart.vue";
+import MockPrice from "~/components/MockPrice.vue";
+import CoindeskPrice from "~/components/CoindeskPrice.vue";
 
 onMounted(() => {
   console.log("Page mounted");

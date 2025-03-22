@@ -18,26 +18,28 @@ RUN npm install
 # Копируем все файлы приложения
 COPY . .
 
-# Проверяем структуру проекта
+# Проверяем структуру проекта и содержимое файлов
 RUN echo "=== Project structure ===" && \
     ls -la && \
-    echo "=== Pages directory ===" && \
-    ls -la pages || echo "No pages directory!" && \
-    echo "=== Components directory ===" && \
-    ls -la components || echo "No components directory!" && \
-    echo "=== App.vue ===" && \
-    cat app.vue || echo "No app.vue found!"
+    echo "=== Components ===" && \
+    ls -la components/ && \
+    echo "=== MockPrice.vue ===" && \
+    cat components/MockPrice.vue || echo "Missing MockPrice.vue" && \
+    echo "=== CoindeskPrice.vue ===" && \
+    cat components/CoindeskPrice.vue || echo "Missing CoindeskPrice.vue"
 
 # Устанавливаем переменные окружения для сборки
 ENV NODE_ENV=production
 ENV NITRO_PRESET=node-server
 
-# Запускаем сборку
-RUN npm run build
+# Запускаем сборку с подробным выводом
+RUN npm run build --verbose
 
 # Проверяем результат сборки
-RUN echo "=== Build output ===" && \
-    ls -la .output/server/index.mjs || echo "Build failed!"
+RUN echo "=== Directory after build ===" && \
+    ls -la && \
+    echo "=== .output directory ===" && \
+    ls -la .output/ || echo "No .output directory!"
 
 # Финальный этап
 FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-focal
