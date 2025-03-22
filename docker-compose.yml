@@ -7,7 +7,7 @@ services:
     ports:
       - "${PORT:-3000}:3000"
     environment:
-      - BACKEND_URL=${BACKEND_URL}
+      - BACKEND_URL=http://backend:3001
       - NODE_ENV=production
       - NUXT_HOST=0.0.0.0
       - NUXT_PORT=3000
@@ -50,11 +50,9 @@ services:
   db:
     image: postgres:14
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      POSTGRES_USER: ${DB_USER:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: ${DB_NAME:-bitcoin_tracker}
     expose:
       - "5432"
     healthcheck:
@@ -62,6 +60,3 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-volumes:
-  postgres_data:

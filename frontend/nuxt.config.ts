@@ -2,10 +2,10 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: false },
-  ssr: true,
+  ssr: false,
   app: {
     head: {
-      title: 'Bitcoin Price Tracker',
+      title: 'Bitcoin Tracker',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' }
@@ -14,10 +14,18 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      backendUrl: process.env.BACKEND_URL
+      backendUrl: process.env.BACKEND_URL || 'http://localhost:3001'
     }
   },
   nitro: {
     preset: 'node-server'
+  },
+  imports: {
+    dirs: ['composables']
+  },
+  vite: {
+    define: {
+      'window.global': {}
+    }
   }
 })
