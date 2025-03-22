@@ -1,6 +1,12 @@
 FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-focal AS builder
 
 # Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Копируем данные в общую директорию
+COPY data/bitcoin_data.json ./data/
+
+# Переходим в frontend директорию
 WORKDIR /app/frontend
 
 # Устанавливаем Node.js
@@ -9,45 +15,27 @@ RUN apt-get update && apt-get install -y curl && \
     apt-get install -y nodejs && \
     npm install -g npm@10.2.4
 
-# Копируем файлы из frontend директории
+# Копируем package.json и package-lock.json
 COPY frontend/package*.json ./
 RUN npm install
 
-# Копируем данные и остальные файлы frontend
-COPY frontend/data ./data
+# Копируем все файлы frontend
 COPY frontend/ ./
 
-# Проверяем структуру проекта
-RUN echo "=== Project structure ===" && \
-    ls -la && \
-    echo "=== Components directory ===" && \
-    ls -la components/ && \
-    echo "=== Pages directory ===" && \
-    ls -la pages/
+# Создаем символическую ссылку на данные
+RUN mkdir -p data && \
+    ln -s /app/data/bitcoin_data.json ./data/bitcoin_data.json
 
-# Проверяем содержимое ключевых файлов
-RUN echo "=== app.vue ===" && \
-    cat app.vue && \
-    echo "=== pages/index.vue ===" && \
-    cat pages/index.vue
+# Проверяем структуру
+RUN echo "=== Data file ===" && \
+    cat data/bitcoin_data.json
 
 # Устанавливаем переменные окружения для сборки
 ENV NODE_ENV=production
 ENV NITRO_PRESET=node-server
 
-# Очищаем кэш npm и node_modules перед сборкой
-RUN npm cache clean --force && \
-    rm -rf node_modules && \
-    npm install
-
-# Запускаем сборку с подробным выводом
-RUN npm run build --verbose
-
-# Проверяем результат сборки
-RUN echo "=== Directory after build ===" && \
-    ls -la && \
-    echo "=== .output directory ===" && \
-    ls -la .output/ || echo "No .output directory!"
+# Запускаем сборку
+RUN npm run build
 
 # Финальный этап
 FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-focal
@@ -60,7 +48,8 @@ RUN apt-get update && apt-get install -y curl && \
     apt-get install -y nodejs && \
     npm install -g npm@10.2.4
 
-# Копируем собранное приложение
+# Копируем собранное приложение и данные
+COPY --from=builder /app/data ./data
 COPY --from=builder /app/frontend/.output ./.output
 COPY --from=builder /app/frontend/package.json ./package.json
 

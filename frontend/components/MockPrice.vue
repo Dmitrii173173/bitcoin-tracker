@@ -63,7 +63,7 @@
           </div>
         </div>
 
-        <div class="chart-wrapper"><canvas ref="chartCanvas"></canvas></div>
+        <div class="chart-wrapper"><canvas ref="chartRef"></canvas></div>
       </div>
     </div>
   </div>
@@ -228,10 +228,9 @@ import { ref, onMounted, computed } from "vue";
 import Chart from "chart.js/auto";
 import { useHistoricalData } from "~/composables/useHistoricalData";
 
-let Chart;
+const chartRef = ref<HTMLCanvasElement | null>(null);
+const { data } = useHistoricalData();
 
-// Определяем переменные до использования browser API
-const chartCanvas = ref(null);
 let chart = null;
 const selectedPeriod = ref("day");
 const priceHistory = ref([]);
@@ -246,7 +245,7 @@ const periods = [
 ];
 
 const updateChart = () => {
-  if (!process.client || !chartCanvas.value) return;
+  if (!process.client || !chartRef.value) return;
 
   if (chart) {
     chart.destroy();
@@ -254,64 +253,33 @@ const updateChart = () => {
 
   if (!Chart) return;
 
-  chart = new Chart(chartCanvas.value, {
+  chart = new Chart(chartRef.value, {
     type: "line",
     data: {
-      labels: priceHistory.value.map((p) => p.timestamp),
       datasets: [
         {
-          label: "Price",
-          data: priceHistory.value.map((p) => p.close),
+          label: "BTC/USDT",
+          data: data.value,
           borderColor: "#007AFF",
           backgroundColor: "rgba(0, 122, 255, 0.1)",
           borderWidth: 2,
           fill: true,
           tension: 0.4,
           pointRadius: 0,
-          pointHoverRadius: 6,
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: {
-        intersect: false,
-        mode: "index",
-      },
-      plugins: {
-        legend: {
-          display: false,
-        },
-        tooltip: {
-          backgroundColor: "rgba(255, 255, 255, 0.9)",
-          titleColor: "#1d1d1f",
-          bodyColor: "#1d1d1f",
-          borderColor: "rgba(0, 0, 0, 0.1)",
-          borderWidth: 1,
-          padding: 12,
-          cornerRadius: 8,
-          titleFont: {
-            size: 14,
-            weight: "600",
-            family: "-apple-system",
-          },
-          bodyFont: {
-            size: 13,
-            family: "-apple-system",
-          },
-        },
-      },
       scales: {
         x: {
+          type: "time",
+          time: {
+            unit: "day",
+          },
           grid: {
             display: false,
-          },
-          ticks: {
-            font: {
-              size: 12,
-              family: "-apple-system",
-            },
           },
         },
         y: {
@@ -319,11 +287,17 @@ const updateChart = () => {
             color: "rgba(0, 0, 0, 0.05)",
           },
           ticks: {
-            font: {
-              size: 12,
-              family: "-apple-system",
-            },
             callback: (value) => `$${value.toLocaleString()}`,
+          },
+        },
+      },
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => `$${context.parsed.y.toLocaleString()}`,
           },
         },
       },
@@ -336,7 +310,7 @@ if (process.client) {
   import("chart.js/auto").then((module) => {
     Chart = module.default;
     // После импорта Chart.js инициализируем график
-    if (chartCanvas.value) {
+    if (chartRef.value) {
       updateChart();
     }
   });
