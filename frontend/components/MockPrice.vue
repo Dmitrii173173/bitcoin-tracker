@@ -225,6 +225,9 @@ h2 {
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
+import Chart from "chart.js/auto";
+import { useHistoricalData } from "~/composables/useHistoricalData";
+
 let Chart;
 
 // Определяем переменные до использования browser API

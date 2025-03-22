@@ -63,7 +63,12 @@
           </div>
         </div>
 
-        <div class="chart-wrapper"><canvas ref="chartCanvas"></canvas></div>
+        <div class="chart-wrapper">
+          <div class="chart-container">
+            <h2 class="chart-title">BTC/USD (Coindesk)</h2>
+            <div class="price-chart"><canvas ref="chartRef" /></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -72,14 +77,15 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useCoindeskData } from "~/composables/useCoindeskData";
+import { useHistoricalData } from "~/composables/useHistoricalData";
 
 const { state, fetchPriceData } = useCoindeskData();
 const currentPrice = computed(() => state.currentPrice);
 const priceChange = computed(() => state.change);
 
 let Chart;
-const chartCanvas = ref(null);
-let chart = null;
+const chartRef = ref<HTMLCanvasElement | null>(null);
+const { data } = useHistoricalData();
 const selectedPeriod = ref("day");
 
 const periods = [
@@ -107,28 +113,25 @@ const periodStats = computed(() => {
 });
 
 const updateChart = () => {
-  if (!process.client || !chartCanvas.value || !Chart) return;
+  if (!process.client || !chartRef.value || !Chart) return;
 
-  if (chart) {
-    chart.destroy();
+  if (Chart) {
+    Chart.destroy();
   }
 
-  chart = new Chart(chartCanvas.value, {
+  Chart = new Chart(chartRef.value, {
     type: "line",
     data: {
-      labels: state.priceHistory.map((p) => {
-        const date = new Date(p.timestamp);
-        return date.toLocaleTimeString();
-      }),
       datasets: [
         {
-          label: "BTC Price",
-          data: state.priceHistory.map((p) => p.price),
+          label: "BTC/USD",
+          data: data.value,
           borderColor: "#007AFF",
           backgroundColor: "rgba(0, 122, 255, 0.1)",
           borderWidth: 2,
           fill: true,
           tension: 0.4,
+          pointRadius: 0,
         },
       ],
     },
@@ -136,10 +139,18 @@ const updateChart = () => {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
+        x: {
+          type: "time",
+          time: {
+            unit: "day",
+          },
+          grid: {
+            display: false,
+          },
+        },
         y: {
-          beginAtZero: false,
-          ticks: {
-            callback: (value) => `$${value.toLocaleString()}`,
+          grid: {
+            color: "rgba(0, 0, 0, 0.05)",
           },
         },
       },
@@ -161,7 +172,7 @@ const handlePeriodChange = (period) => {
 if (process.client) {
   import("chart.js/auto").then((module) => {
     Chart = module.default;
-    if (chartCanvas.value) {
+    if (chartRef.value) {
       updateChart();
     }
   });
@@ -180,5 +191,22 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* Те же стили, что и в MockPrice.vue */
+.chart-container {
+  background: var(--card-background);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.chart-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 20px;
+}
+
+.price-chart {
+  height: 300px;
+  position: relative;
+}
 </style>

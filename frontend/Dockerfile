@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -y curl && \
 COPY frontend/package*.json ./
 RUN npm install
 
-# Копируем остальные файлы frontend
+# Копируем данные и остальные файлы frontend
+COPY frontend/data ./data
 COPY frontend/ ./
 
 # Проверяем структуру проекта
