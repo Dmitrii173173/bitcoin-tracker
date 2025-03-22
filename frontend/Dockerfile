@@ -10,8 +10,9 @@ RUN apt-get update && apt-get install -y curl && \
     npm install -g npm@10.2.4
 
 # Копируем файлы frontend приложения
-COPY frontend/package*.json ./
-COPY frontend/ ./
+# Сначала копируем только package.json для лучшего кэширования
+COPY ./package*.json ./
+COPY ./ ./
 
 # Проверяем наличие package.json
 RUN ls -la package.json || exit 1
