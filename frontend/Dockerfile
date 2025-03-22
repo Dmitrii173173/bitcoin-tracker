@@ -3,8 +3,12 @@ FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-focal AS builder
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем корневой package.json и frontend директорию
+# Сначала копируем package.json файлы
 COPY package.json ./
+COPY frontend/package.json ./frontend/
+COPY frontend/package-lock.json ./frontend/
+
+# Затем копируем остальные файлы frontend
 COPY frontend ./frontend
 
 # Устанавливаем Node.js
@@ -12,6 +16,9 @@ RUN apt-get update && apt-get install -y curl && \
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g npm@10.2.4
+
+# Проверяем наличие package.json
+RUN ls -la frontend/package.json || exit 1
 
 # Запускаем сборку
 RUN npm run build
