@@ -66,8 +66,8 @@
                 <button
                   v-for="period in periods"
                   :key="period.value"
-                  :class="{ active: selectedMockPeriod === period.value }"
-                  @click="handleMockPeriodChange(period.value)"
+                  :class="{ active: selectedPeriod === period.value }"
+                  @click="handlePeriodChange(period.value)"
                 >
                   {{ period.label }}
                 </button>
@@ -115,8 +115,8 @@
                 <button
                   v-for="period in periods"
                   :key="period.value"
-                  :class="{ active: selectedCoindeskPeriod === period.value }"
-                  @click="handleCoindeskPeriodChange(period.value)"
+                  :class="{ active: selectedPeriod === period.value }"
+                  @click="handlePeriodChange(period.value)"
                 >
                   {{ period.label }}
                 </button>
@@ -168,8 +168,7 @@ const periods = [
   { label: "1Y", value: "year" },
 ];
 
-const selectedMockPeriod = ref("day");
-const selectedCoindeskPeriod = ref("day");
+const selectedPeriod = ref("day");
 
 const tableData = computed(() => getTableData());
 
@@ -280,24 +279,80 @@ const createCandlestickChart = async (
   return { candlestickChart, volumeChart };
 };
 
-const updateCharts = async () => {
-  const data = getCandlestickData(selectedMockPeriod.value);
-  if (mockChart && mockVolumeChart) {
-    mockChart.data.datasets[0].data = data.candlesticks;
-    mockVolumeChart.data.datasets[0].data = data.volumes;
+const createChart = async (
+  canvas: HTMLCanvasElement,
+  data: any[],
+  label: string
+) => {
+  const { default: Chart } = await import("chart.js/auto");
+
+  return new Chart(canvas, {
+    type: "line",
+    data: {
+      datasets: [
+        {
+          label,
+          data,
+          borderColor: "#007AFF",
+          backgroundColor: "rgba(0, 122, 255, 0.1)",
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          type: "time",
+          time: {
+            unit: "day",
+          },
+          grid: {
+            display: false,
+          },
+        },
+        y: {
+          grid: {
+            color: "rgba(0, 0, 0, 0.05)",
+          },
+          ticks: {
+            callback: (value) => `$${formatNumber(value as number)}`,
+          },
+        },
+      },
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => `$${formatNumber(context.parsed.y)}`,
+          },
+        },
+      },
+    },
+  });
+};
+
+const handlePeriodChange = async (period: string) => {
+  selectedPeriod.value = period;
+
+  // Обновляем оба графика
+  if (mockChart) {
+    const mockData = await fetchHistoricalData(period);
+    mockChart.data.datasets[0].data = mockData;
     mockChart.update();
-    mockVolumeChart.update();
   }
-};
 
-const handleMockPeriodChange = (period: string) => {
-  selectedMockPeriod.value = period;
-  updateCharts();
-};
-
-const handleCoindeskPeriodChange = (period: string) => {
-  selectedCoindeskPeriod.value = period;
-  updateCoindeskChart();
+  if (coindeskChart) {
+    const coindeskData = await fetchHistoricalData(period);
+    coindeskChart.data.datasets[0].data = coindeskData;
+    coindeskChart.update();
+  }
 };
 
 onMounted(async () => {
@@ -315,21 +370,23 @@ onMounted(async () => {
   }
 
   if (coindeskChartRef.value) {
-    await fetchHistoricalData("day");
+    const coindeskData = await fetchHistoricalData("day");
     coindeskChart = await createChart(
       coindeskChartRef.value,
-      coindeskHistoricalData.value,
+      coindeskData,
       "BTC/USD"
     );
   }
 
-  // Обновляем данные Coindesk каждую минуту
-  setInterval(fetchCurrentPrice, 60000);
+  // Обновляем данные каждую минуту
+  setInterval(async () => {
+    await fetchCurrentPrice();
+    handlePeriodChange(selectedPeriod.value);
+  }, 60000);
 });
 
 // Следим за изменениями периодов
-watch(selectedMockPeriod, updateCharts);
-watch(selectedCoindeskPeriod, updateCoindeskChart);
+watch(selectedPeriod, handlePeriodChange);
 </script>
 
 <style scoped>

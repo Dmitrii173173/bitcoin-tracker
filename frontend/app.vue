@@ -1,5 +1,11 @@
 <template>
-  <div><NuxtPage /></div>
+  <div>
+    <nav class="navigation">
+      <NuxtLink to="/" class="nav-link">Графики</NuxtLink>
+      <NuxtLink to="/database" class="nav-link">База данных</NuxtLink>
+    </nav>
+    <NuxtPage />
+  </div>
 </template>
 
 <style>
@@ -50,5 +56,31 @@ h1 {
   .charts-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.navigation {
+  padding: 16px 24px;
+  background: var(--card-background);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  gap: 16px;
+}
+
+.nav-link {
+  color: var(--text-primary);
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.nav-link.router-link-active {
+  background: var(--accent-color);
+  color: white;
 }
 </style>

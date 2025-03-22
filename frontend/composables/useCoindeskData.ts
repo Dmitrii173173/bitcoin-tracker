@@ -1,39 +1,26 @@
 import { ref, computed } from 'vue'
 
-interface CoindeskData {
-  time: {
-    updated: string
-  }
-  bpi: {
-    USD: {
-      rate_float: number
-    }
-  }
-}
-
 export function useCoindeskData() {
-  const data = ref<CoindeskData | null>(null)
+  const currentPrice = ref(0)
   const historicalData = ref<any[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
-
-  const currentPrice = computed(() => {
-    return data.value?.bpi.USD.rate_float || 0
-  })
 
   const fetchCurrentPrice = async () => {
     try {
       loading.value = true
       const response = await fetch('https://api.coindesk.com/v1/bpi/currentprice.json')
-      data.value = await response.json()
+      const data = await response.json()
+      currentPrice.value = data.bpi.USD.rate_float
     } catch (e) {
       error.value = 'Failed to fetch price'
+      console.error(e)
     } finally {
       loading.value = false
     }
   }
 
-  const fetchHistoricalData = async (period: 'day' | 'week' | 'month' | 'year') => {
+  const fetchHistoricalData = async (period: string) => {
     try {
       loading.value = true
       const end = new Date()
@@ -61,24 +48,24 @@ export function useCoindeskData() {
         `https://api.coindesk.com/v1/bpi/historical/close.json?start=${startStr}&end=${endStr}`
       )
       const data = await response.json()
-      historicalData.value = Object.entries(data.bpi).map(([date, price]) => ({
+      
+      return Object.entries(data.bpi).map(([date, price]) => ({
         x: new Date(date).getTime(),
         y: price
       }))
     } catch (e) {
       error.value = 'Failed to fetch historical data'
-      historicalData.value = []
+      console.error(e)
+      return []
     } finally {
       loading.value = false
     }
   }
 
   return {
-    data,
-    historicalData,
+    currentPrice,
     loading,
     error,
-    currentPrice,
     fetchCurrentPrice,
     fetchHistoricalData
   }
