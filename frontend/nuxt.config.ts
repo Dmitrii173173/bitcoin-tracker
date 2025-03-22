@@ -14,7 +14,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      backendUrl: process.env.NUXT_PUBLIC_BACKEND_URL || 'http://backend:3001'  // для Docker и Railway
+      backendUrl: process.env.BACKEND_URL
     }
   },
   nitro: {
