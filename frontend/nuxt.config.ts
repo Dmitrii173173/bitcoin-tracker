@@ -25,15 +25,13 @@ export default defineNuxtConfig({
   nitro: {
     preset: 'node-server'
   },
-  // Важно: изменяем конфигурацию для корректной работы с Pinia
+  // Упрощаем конфигурацию до минимума
   pinia: {
-    autoImports: [
-      'defineStore',
-      'acceptHMRUpdate',
-    ]
+    autoImports: ['defineStore']
   },
+  // Отключаем автоматические импорты
   imports: {
-    dirs: ['stores']
+    dirs: []
   },
   // Добавляем правильную конфигурацию для сборки
   vite: {
