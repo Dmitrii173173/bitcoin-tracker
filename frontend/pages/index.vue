@@ -1,33 +1,41 @@
 <template>
   <div class="container">
-    <div class="charts-grid">
-      <ClientOnly>
-        <BinanceChart
-          v-if="store.mockData.length"
-          title="BTC/USDT (Mock)"
+    <div class="section">
+      <h2 class="section-title">Mock Data</h2>
+      <div class="content-wrapper">
+        <ClientOnly>
+          <BinanceChart
+            v-if="store.mockData.length"
+            title="BTC/USDT (Mock)"
+            :data="store.mockData"
+            :isMock="true"
+          />
+        </ClientOnly>
+        <DataTable
+          title="Mock Data Table"
           :data="store.mockData"
-          :isMock="true"
+          :onRefresh="store.generateMockData"
         />
-        <BinanceChart
-          v-if="store.coindeskData.length"
-          title="BTC/USD (Coindesk)"
-          :data="store.coindeskData"
-          :isMock="false"
-        />
-      </ClientOnly>
+      </div>
     </div>
 
-    <div class="tables-section">
-      <DataTable
-        title="Mock Data"
-        :data="store.mockData"
-        :onRefresh="store.generateMockData"
-      />
-      <DataTable
-        title="Coindesk Data"
-        :data="store.coindeskData"
-        :onRefresh="store.fetchCoindeskData"
-      />
+    <div class="section">
+      <h2 class="section-title">Coindesk Data</h2>
+      <div class="content-wrapper">
+        <ClientOnly>
+          <BinanceChart
+            v-if="store.coindeskData.length"
+            title="BTC/USD (Coindesk)"
+            :data="store.coindeskData"
+            :isMock="false"
+          />
+        </ClientOnly>
+        <DataTable
+          title="Coindesk Data Table"
+          :data="store.coindeskData"
+          :onRefresh="store.fetchCoindeskData"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -35,8 +43,6 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { useMarketStore } from "~/stores/marketStore";
-import BinanceChart from "~/components/BinanceChart.vue";
-import DataTable from "~/components/DataTable.vue";
 
 const store = useMarketStore();
 
@@ -58,24 +64,34 @@ onMounted(() => {
   padding: 20px;
   background: #0b0e11;
   min-height: 100vh;
+  color: white;
 }
 
-.charts-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.section {
+  margin-bottom: 40px;
+}
+
+.section-title {
+  color: white;
+  font-size: 24px;
+  margin-bottom: 20px;
+  padding: 0 20px;
+}
+
+.content-wrapper {
+  display: flex;
+  flex-direction: column;
   gap: 24px;
   padding: 20px;
 }
 
-.tables-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
+@media (min-width: 1200px) {
+  .content-wrapper {
+    flex-direction: row;
+  }
 
-@media (max-width: 1024px) {
-  .charts-grid {
-    grid-template-columns: 1fr;
+  .content-wrapper > * {
+    flex: 1;
   }
 }
 </style>

@@ -1,49 +1,48 @@
 <template>
-  <div class="data-table-container">
+  <div class="data-table">
     <div class="table-header">
-      <h2>{{ title }}</h2>
-      <button @click="refreshData" class="refresh-btn">Обновить данные</button>
+      <h3>{{ title }}</h3>
+      <button @click="onRefresh" class="refresh-button">Обновить</button>
     </div>
-
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Дата</th>
-          <th>Цена открытия</th>
-          <th>Максимум</th>
-          <th>Минимум</th>
-          <th>Цена закрытия</th>
-          <th>Объем</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="item in data" :key="item.date">
-          <td>{{ formatDate(item.date) }}</td>
-          <td :class="getPriceClass(item.open, item.close)">
-            ${{ formatNumber(item.open) }}
-          </td>
-          <td>${{ formatNumber(item.high) }}</td>
-          <td>${{ formatNumber(item.low) }}</td>
-          <td :class="getPriceClass(item.close, item.open)">
-            ${{ formatNumber(item.close) }}
-          </td>
-          <td>{{ formatVolume(item.volume) }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th>Открытие</th>
+            <th>Максимум</th>
+            <th>Минимум</th>
+            <th>Закрытие</th>
+            <th>Объем</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in data" :key="item.date">
+            <td>{{ formatDate(item.date) }}</td>
+            <td :class="getPriceClass(item.open, item.close)">
+              ${{ formatNumber(item.open) }}
+            </td>
+            <td>${{ formatNumber(item.high) }}</td>
+            <td>${{ formatNumber(item.low) }}</td>
+            <td :class="getPriceClass(item.close, item.open)">
+              ${{ formatNumber(item.close) }}
+            </td>
+            <td>{{ formatVolume(item.volume) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { defineProps } from "vue";
-
-const props = defineProps<{
+defineProps<{
   title: string;
   data: any[];
-  onRefresh?: () => void;
+  onRefresh: () => void;
 }>();
 
-const formatDate = (date: string | Date) => {
+const formatDate = (date: Date) => {
   return new Date(date).toLocaleString();
 };
 
@@ -55,36 +54,26 @@ const formatNumber = (value: number) => {
 };
 
 const formatVolume = (volume: number) => {
-  if (volume >= 1000000) {
-    return `${(volume / 1000000).toFixed(2)}M`;
-  }
-  if (volume >= 1000) {
-    return `${(volume / 1000).toFixed(2)}K`;
-  }
+  if (volume >= 1000000) return `${(volume / 1000000).toFixed(2)}M`;
+  if (volume >= 1000) return `${(volume / 1000).toFixed(2)}K`;
   return volume.toString();
 };
 
-const getPriceClass = (current: number, previous: number) => {
-  return {
-    "price-up": current > previous,
-    "price-down": current < previous,
-    "price-neutral": current === previous,
-  };
-};
-
-const refreshData = () => {
-  if (props.onRefresh) {
-    props.onRefresh();
-  }
+const getPriceClass = (current: number, reference: number) => {
+  return current > reference
+    ? "positive"
+    : current < reference
+    ? "negative"
+    : "";
 };
 </script>
 
 <style scoped>
-.data-table-container {
-  background: var(--card-background);
-  border-radius: 16px;
+.data-table {
+  background: #1a1d20;
+  border-radius: 12px;
   padding: 20px;
-  margin: 20px;
+  color: white;
 }
 
 .table-header {
@@ -94,41 +83,67 @@ const refreshData = () => {
   margin-bottom: 20px;
 }
 
-.refresh-btn {
-  padding: 8px 16px;
-  background: var(--accent-color);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+.table-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
 }
 
-.data-table {
+.refresh-button {
+  padding: 8px 16px;
+  background: #2c3035;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-button:hover {
+  background: #3a3f45;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.data-table th,
-.data-table td {
+th,
+td {
   padding: 12px;
   text-align: right;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.data-table th {
-  background: var(--background-secondary);
-  font-weight: 600;
+th {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.price-up {
-  color: #34c759;
+.positive {
+  color: #02c076;
 }
 
-.price-down {
-  color: #ff3b30;
+.negative {
+  color: #f6465d;
 }
 
-.price-neutral {
-  color: #8e8e93;
+@media (max-width: 768px) {
+  .table-wrapper {
+    margin: 0 -20px;
+  }
+
+  table {
+    font-size: 14px;
+  }
+
+  th,
+  td {
+    padding: 8px;
+  }
 }
 </style>
