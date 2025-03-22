@@ -42,9 +42,9 @@
 
 <script setup lang="ts">
 import { onMounted } from "vue";
-import { useMarketStore } from "~/stores/marketStore";
+import useAppState from "~/composables/appstate";
 
-const store = useMarketStore();
+const { store } = useAppState();
 
 onMounted(() => {
   if (!store.mockData.length) {

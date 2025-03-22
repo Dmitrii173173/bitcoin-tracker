@@ -99,9 +99,4 @@ export const useMarketStore = defineStore('market', () => {
     generateMockData,
     fetchCoindeskData
   }
-})
-
-// Важно: добавляем поддержку hot module replacement
-if (import.meta.hot) {
-  import.meta.hot.accept(acceptHMRUpdate(useMarketStore, import.meta.hot))
-} 
+}) 
