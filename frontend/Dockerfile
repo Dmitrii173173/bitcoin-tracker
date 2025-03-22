@@ -13,9 +13,10 @@ RUN apt-get update && apt-get install -y curl && \
 COPY frontend/package*.json ./
 RUN npm install
 
-# Копируем данные
-RUN mkdir -p data
+# Копируем данные и проверяем их
 COPY data/bitcoin_data.json ./data/
+RUN echo "=== Checking data file ===" && \
+    cat data/bitcoin_data.json
 
 # Копируем все файлы frontend
 COPY frontend/ ./
@@ -23,9 +24,7 @@ COPY frontend/ ./
 # Проверяем структуру проекта
 RUN echo "=== Project structure ===" && \
     ls -la && \
-    echo "=== Data file ===" && \
-    ls -la data/ && \
-    echo "=== Components directory ===" && \
+    echo "=== Components ===" && \
     ls -la components/
 
 # Устанавливаем переменные окружения для сборки
@@ -49,7 +48,7 @@ RUN apt-get update && apt-get install -y curl && \
 # Копируем собранное приложение и данные
 COPY --from=builder /app/frontend/.output ./.output
 COPY --from=builder /app/frontend/package.json ./package.json
-COPY --from=builder /app/frontend/data ./data
+COPY --from=builder /app/frontend/data/bitcoin_data.json ./data/bitcoin_data.json
 
 ENV HOST=0.0.0.0
 ENV PORT=3000

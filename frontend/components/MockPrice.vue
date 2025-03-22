@@ -6,30 +6,33 @@
         <div class="stat-row">
           <span class="stat-label">24h High</span>
           <span class="stat-value positive"
-            >${{ formatNumber(periodStats.high) }}</span
+            >${{ formatNumber(currentData?.high || 0) }}</span
           >
         </div>
         <div class="stat-row">
           <span class="stat-label">24h Low</span>
           <span class="stat-value negative"
-            >${{ formatNumber(periodStats.low) }}</span
+            >${{ formatNumber(currentData?.low || 0) }}</span
+          >
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">24h Open</span>
+          <span class="stat-value"
+            >${{ formatNumber(currentData?.open || 0) }}</span
           >
         </div>
         <div class="stat-row">
           <span class="stat-label">Volume</span>
           <span class="stat-value"
-            >${{ formatNumber(periodStats.volume) }}</span
+            >${{ formatNumber(currentData?.volume || 0) }}</span
           >
         </div>
         <div class="stat-row">
           <span class="stat-label">Change</span>
           <span
-            :class="[
-              'stat-value',
-              periodStats.change >= 0 ? 'positive' : 'negative',
-            ]"
+            :class="['stat-value', priceChange >= 0 ? 'positive' : 'negative']"
           >
-            {{ periodStats.change }}%
+            {{ priceChange >= 0 ? "+" : "" }}{{ priceChange }}%
           </span>
         </div>
       </div>
@@ -39,7 +42,7 @@
           <div class="price-header">
             <h2>BTC/USDT</h2>
             <div class="price-value">
-              ${{ formatNumber(currentPrice) }}
+              ${{ formatNumber(currentData?.close || 0) }}
               <span
                 :class="[
                   'change-badge',
@@ -49,17 +52,6 @@
                 {{ priceChange >= 0 ? "+" : "" }}{{ priceChange }}%
               </span>
             </div>
-          </div>
-
-          <div class="timeframe-buttons">
-            <button
-              v-for="period in periods"
-              :key="period.value"
-              :class="{ active: selectedPeriod === period.value }"
-              @click="handlePeriodChange(period.value)"
-            >
-              {{ period.label }}
-            </button>
           </div>
         </div>
 
@@ -224,36 +216,25 @@ h2 {
 </style>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
-import Chart from "chart.js/auto";
+import { ref, onMounted } from "vue";
 import { useHistoricalData } from "~/composables/useHistoricalData";
 
 const chartRef = ref<HTMLCanvasElement | null>(null);
-const { data } = useHistoricalData();
+const { data, currentData, priceChange } = useHistoricalData();
 
-let chart = null;
-const selectedPeriod = ref("day");
-const priceHistory = ref([]);
-const currentPrice = ref(0);
-const priceChange = ref(0);
+const formatNumber = (num: number) => {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+};
 
-const periods = [
-  { label: "1D", value: "day" },
-  { label: "1W", value: "week" },
-  { label: "1M", value: "month" },
-  { label: "1Y", value: "year" },
-];
+onMounted(async () => {
+  if (!chartRef.value) return;
 
-const updateChart = () => {
-  if (!process.client || !chartRef.value) return;
+  const { default: Chart } = await import("chart.js/auto");
 
-  if (chart) {
-    chart.destroy();
-  }
-
-  if (!Chart) return;
-
-  chart = new Chart(chartRef.value, {
+  new Chart(chartRef.value, {
     type: "line",
     data: {
       datasets: [
@@ -287,7 +268,7 @@ const updateChart = () => {
             color: "rgba(0, 0, 0, 0.05)",
           },
           ticks: {
-            callback: (value) => `$${value.toLocaleString()}`,
+            callback: (value) => `$${formatNumber(value as number)}`,
           },
         },
       },
@@ -297,135 +278,11 @@ const updateChart = () => {
         },
         tooltip: {
           callbacks: {
-            label: (context) => `$${context.parsed.y.toLocaleString()}`,
+            label: (context) => `$${formatNumber(context.parsed.y)}`,
           },
         },
       },
     },
   });
-};
-
-if (process.client) {
-  // Импортируем Chart.js только на клиенте
-  import("chart.js/auto").then((module) => {
-    Chart = module.default;
-    // После импорта Chart.js инициализируем график
-    if (chartRef.value) {
-      updateChart();
-    }
-  });
-}
-
-onMounted(() => {
-  if (process.client) {
-    handlePeriodChange("day");
-    setInterval(() => {
-      if (selectedPeriod.value === "day") {
-        handlePeriodChange("day");
-      }
-    }, 60000);
-  }
 });
-
-// Остальные функции, не использующие browser API
-const generateHistoricalData = (period) => {
-  const now = new Date();
-  const data = [];
-  let timeInterval;
-  let points;
-
-  switch (period) {
-    case "day":
-      points = 24;
-      timeInterval = 60 * 60 * 1000; // 1 час
-      break;
-    case "week":
-      points = 7 * 24;
-      timeInterval = 60 * 60 * 1000; // 1 час
-      break;
-    case "month":
-      points = 30;
-      timeInterval = 24 * 60 * 60 * 1000; // 1 день
-      break;
-    case "year":
-      points = 365;
-      timeInterval = 24 * 60 * 60 * 1000; // 1 день
-      break;
-    default:
-      points = 24;
-      timeInterval = 60 * 60 * 1000;
-  }
-
-  let basePrice = 50000;
-  let lastClose = basePrice;
-
-  for (let i = points; i >= 0; i--) {
-    const timestamp = new Date(now.getTime() - i * timeInterval);
-    const variation = basePrice * 0.02; // 2% вариация
-
-    const trend = Math.random() > 0.5 ? 1 : -1;
-    const open = lastClose;
-    const close = open + trend * Math.random() * variation;
-    const high = Math.max(open, close) + Math.random() * variation * 0.5;
-    const low = Math.min(open, close) - Math.random() * variation * 0.5;
-    const volume = Math.random() * 1000 + 500;
-
-    lastClose = close;
-
-    data.push({
-      timestamp,
-      open,
-      high,
-      low,
-      close,
-      volume,
-    });
-  }
-
-  return data;
-};
-
-const handlePeriodChange = (period) => {
-  selectedPeriod.value = period;
-  priceHistory.value = generateHistoricalData(period);
-  if (process.client) {
-    updateChart();
-  }
-
-  const latest = priceHistory.value[priceHistory.value.length - 1];
-  const first = priceHistory.value[0];
-  currentPrice.value = latest.close;
-  priceChange.value = (
-    ((latest.close - first.open) / first.open) *
-    100
-  ).toFixed(2);
-};
-
-const formatNumber = (num) => {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(num);
-};
-
-const periodStats = computed(() => {
-  const data = priceHistory.value;
-  if (!data.length) return { high: 0, low: 0, volume: 0, change: 0 };
-
-  const high = Math.max(...data.map((p) => p.high));
-  const low = Math.min(...data.map((p) => p.low));
-  const volume = data.reduce((sum, p) => sum + p.volume, 0);
-  const change = (
-    ((data[data.length - 1].close - data[0].open) / data[0].open) *
-    100
-  ).toFixed(2);
-
-  return { high, low, volume, change };
-});
-
-// Инициализируем начальные данные
-priceHistory.value = generateHistoricalData("day");
-const latest = priceHistory.value[priceHistory.value.length - 1];
-currentPrice.value = latest.close;
-priceChange.value = 0;
 </script>
