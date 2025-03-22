@@ -2,13 +2,13 @@
   <div class="container">
     <div class="charts-grid">
       <ClientOnly>
-        <PriceChart
+        <BinanceChart
           v-if="store.mockData.length"
           title="BTC/USDT (Mock)"
           :data="store.mockData"
           :isMock="true"
         />
-        <PriceChart
+        <BinanceChart
           v-if="store.coindeskData.length"
           title="BTC/USD (Coindesk)"
           :data="store.coindeskData"
@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { useMarketStore } from "~/stores/marketStore";
-import PriceChart from "~/components/PriceChart.vue";
+import BinanceChart from "~/components/BinanceChart.vue";
 import DataTable from "~/components/DataTable.vue";
 
 const store = useMarketStore();
@@ -56,6 +56,8 @@ onMounted(() => {
 <style scoped>
 .container {
   padding: 20px;
+  background: #0b0e11;
+  min-height: 100vh;
 }
 
 .charts-grid {
