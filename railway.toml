@@ -1,0 +1,34 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "cd frontend && npm install && npm run build"
+
+[deploy]
+startCommand = "cd frontend && node .output/server/index.mjs"
+restartPolicyType = "ON_FAILURE"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+
+[[services]]
+name = "frontend"
+envVars = [
+  { key = "NODE_ENV", value = "production" },
+  { key = "NUXT_HOST", value = "0.0.0.0" },
+  { key = "NUXT_PORT", value = "3000" }
+]
+
+[[services]]
+name = "backend"
+envVars = [
+  { key = "NODE_ENV", value = "production" },
+  { key = "DATABASE_URL", value = "${{DATABASE_URL}}" }
+]
+
+[[services]]
+name = "collector"
+envVars = [
+  { key = "NODE_ENV", value = "production" },
+  { key = "DATABASE_URL", value = "${{DATABASE_URL}}" }
+]
+
+[[plugins]]
+name = "postgresql" 
