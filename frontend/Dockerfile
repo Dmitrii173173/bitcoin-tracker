@@ -1,15 +1,7 @@
 FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-focal AS builder
 
 # Устанавливаем рабочую директорию
-WORKDIR /app
-
-# Сначала копируем package.json файлы
-COPY package.json ./
-COPY frontend/package.json ./frontend/
-COPY frontend/package-lock.json ./frontend/
-
-# Затем копируем остальные файлы frontend
-COPY frontend ./frontend
+WORKDIR /app/frontend
 
 # Устанавливаем Node.js
 RUN apt-get update && apt-get install -y curl && \
@@ -17,14 +9,19 @@ RUN apt-get update && apt-get install -y curl && \
     apt-get install -y nodejs && \
     npm install -g npm@10.2.4
 
-# Проверяем наличие package.json
-RUN ls -la frontend/package.json || exit 1
+# Копируем файлы frontend приложения
+COPY frontend/package*.json ./
+COPY frontend/ ./
 
-# Запускаем сборку
+# Проверяем наличие package.json
+RUN ls -la package.json || exit 1
+
+# Устанавливаем зависимости и собираем
+RUN npm install
 RUN npm run build
 
 # Проверяем создание .output
-RUN ls -la frontend/.output/server/index.mjs || exit 1
+RUN ls -la .output/server/index.mjs || exit 1
 
 # Финальный этап
 FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-focal
@@ -37,7 +34,7 @@ RUN apt-get update && apt-get install -y curl && \
     apt-get install -y nodejs && \
     npm install -g npm@10.2.4
 
-# Копируем только необходимые файлы
+# Копируем собранное приложение
 COPY --from=builder /app/frontend/.output ./.output
 COPY --from=builder /app/frontend/package.json ./package.json
 
