@@ -25,15 +25,16 @@ export default defineNuxtConfig({
   nitro: {
     preset: 'node-server'
   },
-  // Обновляем конфигурацию Pinia
+  // Упрощаем конфигурацию Pinia
   pinia: {
-    autoImports: [
-      'defineStore',
-      ['defineStore', 'definePiniaStore'],
-    ]
+    autoImports: ['defineStore']
   },
+  // Отключаем автоматические импорты
   imports: {
-    dirs: ['stores']
+    dirs: []
+  },
+  build: {
+    transpile: ['pinia']
   },
   // Добавляем дату совместимости
   experimental: {
