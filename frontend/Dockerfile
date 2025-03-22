@@ -1,12 +1,6 @@
 FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-focal AS builder
 
 # Устанавливаем рабочую директорию
-WORKDIR /app
-
-# Копируем данные в общую директорию
-COPY data/bitcoin_data.json ./data/
-
-# Переходим в frontend директорию
 WORKDIR /app/frontend
 
 # Устанавливаем Node.js
@@ -19,16 +13,20 @@ RUN apt-get update && apt-get install -y curl && \
 COPY frontend/package*.json ./
 RUN npm install
 
+# Копируем данные
+RUN mkdir -p data
+COPY data/bitcoin_data.json ./data/
+
 # Копируем все файлы frontend
 COPY frontend/ ./
 
-# Создаем символическую ссылку на данные
-RUN mkdir -p data && \
-    ln -s /app/data/bitcoin_data.json ./data/bitcoin_data.json
-
-# Проверяем структуру
-RUN echo "=== Data file ===" && \
-    cat data/bitcoin_data.json
+# Проверяем структуру проекта
+RUN echo "=== Project structure ===" && \
+    ls -la && \
+    echo "=== Data file ===" && \
+    ls -la data/ && \
+    echo "=== Components directory ===" && \
+    ls -la components/
 
 # Устанавливаем переменные окружения для сборки
 ENV NODE_ENV=production
@@ -49,9 +47,9 @@ RUN apt-get update && apt-get install -y curl && \
     npm install -g npm@10.2.4
 
 # Копируем собранное приложение и данные
-COPY --from=builder /app/data ./data
 COPY --from=builder /app/frontend/.output ./.output
 COPY --from=builder /app/frontend/package.json ./package.json
+COPY --from=builder /app/frontend/data ./data
 
 ENV HOST=0.0.0.0
 ENV PORT=3000
