@@ -10,16 +10,13 @@
     "start": "node .output/server/index.mjs"
   },
   "dependencies": {
-    "nuxt": "^3.16.1",
     "chart.js": "^4.0.0",
     "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^2.30.0"
   },
   "devDependencies": {
-    "@nuxt/types": "^2.15.8",
-    "@nuxt/typescript-build": "^2.1.0",
     "@types/node": "^18",
-    "typescript": "^5.0.0",
-    "vue-tsc": "^1.8.27"
+    "nuxt": "^3.16.1",
+    "typescript": "^5.0.0"
   }
 }

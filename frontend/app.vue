@@ -2,11 +2,6 @@
   <div><NuxtPage /></div>
 </template>
 
-<script setup>
-import MockPrice from "~/components/MockPrice.vue";
-import CoindeskPrice from "~/components/CoindeskPrice.vue";
-</script>
-
 <style>
 :root {
   --app-background: #f5f7fa;
