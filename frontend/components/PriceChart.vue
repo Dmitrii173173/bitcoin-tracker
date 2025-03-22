@@ -32,11 +32,28 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
-import Chart, { CandlestickController, CandlestickElement } from 'chart.js/auto';
+import {
+  Chart,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  TimeScale,
+  Tooltip
+} from 'chart.js';
 import 'chartjs-adapter-date-fns';
 
-// Регистрируем поддержку candlestick
-Chart.register(CandlestickController, CandlestickElement);
+// Регистрируем необходимые компоненты
+Chart.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  TimeScale,
+  Tooltip
+);
 
 const props = defineProps<{
   title: string;
@@ -86,22 +103,17 @@ const createCharts = () => {
   if (!candleCtx || !volumeCtx) return;
 
   const candleChart = new Chart(candleCtx, {
-    type: 'candlestick',
+    type: 'line',
     data: {
       datasets: [{
         label: props.title,
         data: props.data.map(item => ({
           x: new Date(item.date),
-          o: item.open,
-          h: item.high,
-          l: item.low,
-          c: item.close
+          y: item.close
         })),
-        color: {
-          up: '#34C759',
-          down: '#FF3B30',
-          unchanged: '#8E8E93'
-        }
+        borderColor: '#007AFF',
+        backgroundColor: 'rgba(0, 122, 255, 0.1)',
+        fill: true
       }]
     },
     options: {
