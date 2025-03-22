@@ -190,7 +190,6 @@ const createCandlestickChart = async (
 ) => {
   const { default: Chart } = await import("chart.js/auto");
 
-  // Создаем график свечей
   const candlestickChart = new Chart(canvas, {
     type: "candlestick",
     data: {
@@ -241,7 +240,6 @@ const createCandlestickChart = async (
     },
   });
 
-  // Создаем график объемов
   const volumeChart = new Chart(volumeCanvas, {
     type: "bar",
     data: {
@@ -378,14 +376,12 @@ onMounted(async () => {
     );
   }
 
-  // Обновляем данные каждую минуту
   setInterval(async () => {
     await fetchCurrentPrice();
     handlePeriodChange(selectedPeriod.value);
   }, 60000);
 });
 
-// Следим за изменениями периодов
 watch(selectedPeriod, handlePeriodChange);
 </script>
 

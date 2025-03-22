@@ -1,117 +1,256 @@
 <template>
-  <div class="chart-outer-container">
-    <div class="chart-container">
-      <div class="chart-header">
-        <div class="chart-title">
-          <h2>BTC/USDT</h2>
-          <span class="price">{{ currentPrice.toFixed(2) }} USDT</span>
-        </div>
+  <div class="chart-container">
+    <div class="chart-header">
+      <h2>{{ title }}</h2>
+      <div class="timeframe-selector">
+        <button
+          v-for="period in timeframes"
+          :key="period.value"
+          :class="{ active: selectedTimeframe === period.value }"
+          @click="changeTimeframe(period.value)"
+        >
+          {{ period.label }}
+        </button>
       </div>
-      <div class="chart-wrapper">
-        <canvas ref="chartRef" height="400"></canvas>
-      </div>
+    </div>
+
+    <div class="chart-wrapper">
+      <canvas ref="candlestickChart"></canvas>
+      <canvas ref="volumeChart"></canvas>
+    </div>
+
+    <div v-if="hoveredData" class="tooltip">
+      <div>Date: {{ formatDate(hoveredData.date) }}</div>
+      <div>Open: ${{ formatNumber(hoveredData.open) }}</div>
+      <div>High: ${{ formatNumber(hoveredData.high) }}</div>
+      <div>Low: ${{ formatNumber(hoveredData.low) }}</div>
+      <div>Close: ${{ formatNumber(hoveredData.close) }}</div>
+      <div>Volume: {{ formatVolume(hoveredData.volume) }}</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-import Chart from "chart.js/auto";
+import { ref, onMounted, watch } from 'vue';
+import Chart, { CandlestickController, CandlestickElement } from 'chart.js/auto';
+import 'chartjs-adapter-date-fns';
 
-const chartRef = ref<HTMLCanvasElement | null>(null);
-const chart = ref<Chart | null>(null);
-const currentPrice = ref(41000);
+// Регистрируем поддержку candlestick
+Chart.register(CandlestickController, CandlestickElement);
 
-const mockData = Array.from({ length: 12 }, (_, i) => ({
-  time: new Date(Date.now() - i * 3600000).toLocaleTimeString(),
-  price: 41000 + Math.sin(i) * 500,
-}));
+const props = defineProps<{
+  title: string;
+  data: any[];
+  isMock?: boolean;
+}>();
 
-const createChart = () => {
-  if (!chartRef.value) return;
+const candlestickChart = ref<HTMLCanvasElement | null>(null);
+const volumeChart = ref<HTMLCanvasElement | null>(null);
+const selectedTimeframe = ref('24H');
+const hoveredData = ref(null);
 
-  if (chart.value) {
-    chart.value.destroy();
+const timeframes = [
+  { label: '1H', value: '1H' },
+  { label: '24H', value: '24H' },
+  { label: '7D', value: '7D' },
+  { label: '1M', value: '1M' }
+];
+
+const formatNumber = (value: number) => {
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+};
+
+const formatDate = (date: Date) => {
+  return date.toLocaleString();
+};
+
+const formatVolume = (volume: number) => {
+  if (volume >= 1000000) {
+    return `${(volume / 1000000).toFixed(2)}M`;
   }
+  if (volume >= 1000) {
+    return `${(volume / 1000).toFixed(2)}K`;
+  }
+  return volume.toString();
+};
 
-  chart.value = new Chart(chartRef.value, {
-    type: "line",
+const createCharts = () => {
+  if (!candlestickChart.value || !volumeChart.value) return;
+
+  const candleCtx = candlestickChart.value.getContext('2d');
+  const volumeCtx = volumeChart.value.getContext('2d');
+
+  if (!candleCtx || !volumeCtx) return;
+
+  const candleChart = new Chart(candleCtx, {
+    type: 'candlestick',
     data: {
-      labels: mockData.map((d) => d.time).reverse(),
-      datasets: [
-        {
-          data: mockData.map((d) => d.price).reverse(),
-          borderColor: "#02C076",
-          backgroundColor: "rgba(2, 192, 118, 0.1)",
-          fill: true,
-          tension: 0.4,
-          pointRadius: 0,
-          borderWidth: 2,
-        },
-      ],
+      datasets: [{
+        label: props.title,
+        data: props.data.map(item => ({
+          x: new Date(item.date),
+          o: item.open,
+          h: item.high,
+          l: item.low,
+          c: item.close
+        })),
+        color: {
+          up: '#34C759',
+          down: '#FF3B30',
+          unchanged: '#8E8E93'
+        }
+      }]
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
-      aspectRatio: 2,
-      plugins: {
-        legend: { display: false },
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index'
       },
-    },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'hour'
+          }
+        },
+        y: {
+          position: 'right',
+          title: {
+            display: true,
+            text: 'Price (USD)'
+          }
+        }
+      }
+    }
   });
+
+  const volumeChart = new Chart(volumeCtx, {
+    type: 'bar',
+    data: {
+      datasets: [{
+        label: 'Volume',
+        data: props.data.map(item => ({
+          x: new Date(item.date),
+          y: item.volume,
+          color: item.close >= item.open ? '#34C759' : '#FF3B30'
+        })),
+        backgroundColor: (context: any) => {
+          return context.raw?.color || '#8E8E93';
+        }
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          display: false
+        },
+        y: {
+          position: 'left',
+          title: {
+            display: true,
+            text: 'Volume'
+          }
+        }
+      }
+    }
+  });
+
+  return { candleChart, volumeChart };
+};
+
+const changeTimeframe = (timeframe: string) => {
+  selectedTimeframe.value = timeframe;
+  // Здесь добавить логику обновления данных в зависимости от таймфрейма
 };
 
 onMounted(() => {
-  createChart();
-});
+  const charts = createCharts();
 
-onUnmounted(() => {
-  if (chart.value) {
-    chart.value.destroy();
+  // Сохраняем состояние в localStorage
+  if (charts) {
+    localStorage.setItem('chartState', JSON.stringify({
+      timeframe: selectedTimeframe.value,
+      lastUpdate: new Date().toISOString()
+    }));
   }
 });
+
+// Восстанавливаем состояние при загрузке
+const savedState = localStorage.getItem('chartState');
+if (savedState) {
+  const { timeframe } = JSON.parse(savedState);
+  selectedTimeframe.value = timeframe;
+}
 </script>
 
 <style scoped>
-.chart-outer-container {
-  width: 100%;
-  height: 400px;
-  overflow: hidden;
-}
-
 .chart-container {
-  background-color: #0b0e11;
-  border-radius: 8px;
+  background: var(--card-background);
+  border-radius: 16px;
   padding: 20px;
   height: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.chart-wrapper {
-  height: 320px;
-  position: relative;
 }
 
 .chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
 }
 
-.chart-title {
+.chart-wrapper {
+  display: grid;
+  grid-template-rows: 7fr 3fr;
+  gap: 20px;
+  height: calc(100% - 60px);
+}
+
+.timeframe-selector {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
-.chart-title h2 {
-  color: #fff;
-  font-size: 20px;
-  font-weight: 500;
-  margin: 0;
+.timeframe-selector button {
+  padding: 6px 12px;
+  border: 1px solid var(--accent-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent-color);
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.price {
-  color: #02c076;
-  font-size: 24px;
-  font-weight: 500;
+.timeframe-selector button.active {
+  background: var(--accent-color);
+  color: white;
+}
+
+.tooltip {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  z-index: 100;
+}
+
+@media (max-width: 768px) {
+  .chart-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .timeframe-selector {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 </style>
