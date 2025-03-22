@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "nuxt": "^3.16.1",
-    "chart.js": "^4.0.0"
+    "chart.js": "^4.0.0",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "date-fns": "^2.30.0"
   },
   "devDependencies": {
     "@nuxt/types": "^2.15.8",
