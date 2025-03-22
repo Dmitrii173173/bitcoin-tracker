@@ -3,11 +3,27 @@
     <div class="section">
       <h2 class="section-title">Mock Data</h2>
       <div class="content-wrapper">
-        <ClientOnly>
-          <div v-if="mockData.length" class="chart-placeholder">
-            <p>Биткоин график загрузится в клиентском режиме</p>
+        <div class="chart-container">
+          <div class="chart-header">
+            <h3>BTC/USDT (Mock)</h3>
+            <div class="timeframe-selector">
+              <button
+                v-for="period in timeframes"
+                :key="period.value"
+                :class="{ active: mockTimeframe === period.value }"
+                @click="mockTimeframe = period.value"
+              >
+                {{ period.label }}
+              </button>
+            </div>
           </div>
-        </ClientOnly>
+          <ClientOnly>
+            <canvas v-if="mockData.length" ref="mockChartRef"></canvas>
+            <div v-else class="chart-placeholder">
+              <p>Нет данных для отображения</p>
+            </div>
+          </ClientOnly>
+        </div>
         <div class="data-table">
           <h3>Mock Data Table</h3>
           <table>
@@ -22,12 +38,16 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in mockData" :key="index">
+              <tr v-for="(item, index) in filteredMockData" :key="index">
                 <td>{{ new Date(item.date).toLocaleString() }}</td>
-                <td>${{ item.open.toFixed(2) }}</td>
+                <td :class="getColorClass(item.open, item.close)">
+                  ${{ item.open.toFixed(2) }}
+                </td>
                 <td>${{ item.high.toFixed(2) }}</td>
                 <td>${{ item.low.toFixed(2) }}</td>
-                <td>${{ item.close.toFixed(2) }}</td>
+                <td :class="getColorClass(item.close, item.open)">
+                  ${{ item.close.toFixed(2) }}
+                </td>
                 <td>{{ formatVolume(item.volume) }}</td>
               </tr>
             </tbody>
@@ -42,11 +62,27 @@
     <div class="section">
       <h2 class="section-title">Coindesk Data</h2>
       <div class="content-wrapper">
-        <ClientOnly>
-          <div v-if="coindeskData.length" class="chart-placeholder">
-            <p>Coindesk график загрузится в клиентском режиме</p>
+        <div class="chart-container">
+          <div class="chart-header">
+            <h3>BTC/USD (Coindesk)</h3>
+            <div class="timeframe-selector">
+              <button
+                v-for="period in timeframes"
+                :key="period.value"
+                :class="{ active: coindeskTimeframe === period.value }"
+                @click="coindeskTimeframe = period.value"
+              >
+                {{ period.label }}
+              </button>
+            </div>
           </div>
-        </ClientOnly>
+          <ClientOnly>
+            <canvas v-if="coindeskData.length" ref="coindeskChartRef"></canvas>
+            <div v-else class="chart-placeholder">
+              <p>Нет данных для отображения</p>
+            </div>
+          </ClientOnly>
+        </div>
         <div class="data-table">
           <h3>Coindesk Data Table</h3>
           <table>
@@ -61,12 +97,16 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in coindeskData" :key="index">
+              <tr v-for="(item, index) in filteredCoindeskData" :key="index">
                 <td>{{ new Date(item.date).toLocaleString() }}</td>
-                <td>${{ item.open.toFixed(2) }}</td>
+                <td :class="getColorClass(item.open, item.close)">
+                  ${{ item.open.toFixed(2) }}
+                </td>
                 <td>${{ item.high.toFixed(2) }}</td>
                 <td>${{ item.low.toFixed(2) }}</td>
-                <td>${{ item.close.toFixed(2) }}</td>
+                <td :class="getColorClass(item.close, item.open)">
+                  ${{ item.close.toFixed(2) }}
+                </td>
                 <td>{{ formatVolume(item.volume) }}</td>
               </tr>
             </tbody>
@@ -81,19 +121,215 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
+import Chart from "chart.js/auto";
+import "chartjs-adapter-date-fns";
 
 // Отказываемся от использования Pinia
 const mockData = ref([]);
 const coindeskData = ref([]);
 const loading = ref(false);
 
+// Таймфреймы
+const mockTimeframe = ref("day");
+const coindeskTimeframe = ref("day");
+
+// Ссылки на графики
+const mockChartRef = ref(null);
+const coindeskChartRef = ref(null);
+let mockChart = null;
+let coindeskChart = null;
+
+// Таймфреймы для выбора
+const timeframes = [
+  { label: "День", value: "day" },
+  { label: "Неделя", value: "week" },
+  { label: "Месяц", value: "month" },
+  { label: "Год", value: "year" },
+];
+
+// Фильтрованные данные по таймфрейму
+const filteredMockData = computed(() => {
+  return filterDataByTimeframe(mockData.value, mockTimeframe.value);
+});
+
+const filteredCoindeskData = computed(() => {
+  return filterDataByTimeframe(coindeskData.value, coindeskTimeframe.value);
+});
+
+// Фильтрация данных по таймфрейму
+function filterDataByTimeframe(data, timeframe) {
+  if (!data.length) return [];
+
+  const now = new Date();
+  let startDate = new Date();
+
+  switch (timeframe) {
+    case "day":
+      startDate.setDate(now.getDate() - 1);
+      break;
+    case "week":
+      startDate.setDate(now.getDate() - 7);
+      break;
+    case "month":
+      startDate.setMonth(now.getMonth() - 1);
+      break;
+    case "year":
+      startDate.setFullYear(now.getFullYear() - 1);
+      break;
+  }
+
+  return data.filter((item) => new Date(item.date) >= startDate);
+}
+
+// Форматирование объема
 function formatVolume(volume) {
   if (volume >= 1000000) return `${(volume / 1000000).toFixed(2)}M`;
   if (volume >= 1000) return `${(volume / 1000).toFixed(2)}K`;
   return volume.toString();
 }
 
+// Цветовой класс для изменения цены
+function getColorClass(current, reference) {
+  if (current > reference) return "positive";
+  if (current < reference) return "negative";
+  return "";
+}
+
+// Создание и обновление графиков
+function createChart(canvas, data, label) {
+  if (!canvas) return null;
+
+  return new Chart(canvas, {
+    type: "candlestick",
+    data: {
+      datasets: [
+        {
+          label: label,
+          data: data.map((item) => ({
+            x: new Date(item.date),
+            o: item.open,
+            h: item.high,
+            l: item.low,
+            c: item.close,
+          })),
+          color: {
+            up: "#02C076",
+            down: "#F6465D",
+            unchanged: "#8E8E93",
+          },
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const item = context.raw;
+              return [
+                `Открытие: $${item.o.toFixed(2)}`,
+                `Максимум: $${item.h.toFixed(2)}`,
+                `Минимум: $${item.l.toFixed(2)}`,
+                `Закрытие: $${item.c.toFixed(2)}`,
+              ];
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          type: "time",
+          time: {
+            unit: timeframeToTimeUnit(mockTimeframe.value),
+          },
+          ticks: {
+            color: "rgba(255, 255, 255, 0.7)",
+          },
+          grid: {
+            color: "rgba(255, 255, 255, 0.1)",
+          },
+        },
+        y: {
+          position: "right",
+          ticks: {
+            color: "rgba(255, 255, 255, 0.7)",
+            callback: (value) => `$${value.toFixed(2)}`,
+          },
+          grid: {
+            color: "rgba(255, 255, 255, 0.1)",
+          },
+        },
+      },
+    },
+  });
+}
+
+// Преобразование таймфрейма в единицу времени для графика
+function timeframeToTimeUnit(timeframe) {
+  switch (timeframe) {
+    case "day":
+      return "hour";
+    case "week":
+      return "day";
+    case "month":
+      return "day";
+    case "year":
+      return "month";
+    default:
+      return "day";
+  }
+}
+
+// Обновление графиков при изменении данных или таймфрейма
+watch(
+  [filteredMockData, mockTimeframe],
+  () => {
+    if (mockChart) {
+      mockChart.data.datasets[0].data = filteredMockData.value.map((item) => ({
+        x: new Date(item.date),
+        o: item.open,
+        h: item.high,
+        l: item.low,
+        c: item.close,
+      }));
+      mockChart.options.scales.x.time.unit = timeframeToTimeUnit(
+        mockTimeframe.value
+      );
+      mockChart.update();
+    }
+  },
+  { deep: true }
+);
+
+watch(
+  [filteredCoindeskData, coindeskTimeframe],
+  () => {
+    if (coindeskChart) {
+      coindeskChart.data.datasets[0].data = filteredCoindeskData.value.map(
+        (item) => ({
+          x: new Date(item.date),
+          o: item.open,
+          h: item.high,
+          l: item.low,
+          c: item.close,
+        })
+      );
+      coindeskChart.options.scales.x.time.unit = timeframeToTimeUnit(
+        coindeskTimeframe.value
+      );
+      coindeskChart.update();
+    }
+  },
+  { deep: true }
+);
+
+// Генерация Mock данных
 function generateMockData() {
   try {
     const data = [];
@@ -137,6 +373,7 @@ function generateMockData() {
   }
 }
 
+// Получение данных Coindesk
 async function fetchCoindeskData() {
   try {
     loading.value = true;
@@ -169,9 +406,29 @@ async function fetchCoindeskData() {
   }
 }
 
+// Инициализация при монтировании
 onMounted(() => {
   generateMockData();
   fetchCoindeskData();
+
+  // Создаем графики после получения данных
+  setTimeout(() => {
+    if (mockChartRef.value && mockData.value.length) {
+      mockChart = createChart(
+        mockChartRef.value,
+        filteredMockData.value,
+        "BTC/USDT (Mock)"
+      );
+    }
+
+    if (coindeskChartRef.value && coindeskData.value.length) {
+      coindeskChart = createChart(
+        coindeskChartRef.value,
+        filteredCoindeskData.value,
+        "BTC/USD (Coindesk)"
+      );
+    }
+  }, 100);
 
   // Обновляем данные каждую минуту
   setInterval(() => {
@@ -206,13 +463,49 @@ onMounted(() => {
   padding: 20px;
 }
 
-.chart-placeholder {
-  height: 300px;
+.chart-container {
   background: #1a1d20;
   border-radius: 8px;
+  padding: 20px;
+  height: 400px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.chart-header h3 {
+  margin: 0;
+}
+
+.timeframe-selector {
+  display: flex;
+  gap: 5px;
+}
+
+.timeframe-selector button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.timeframe-selector button.active {
+  background: #02c076;
+}
+
+.chart-placeholder {
+  height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .data-table {
@@ -240,6 +533,14 @@ td {
 
 th {
   color: rgba(255, 255, 255, 0.7);
+}
+
+.positive {
+  color: #02c076;
+}
+
+.negative {
+  color: #f6465d;
 }
 
 .refresh-button {
