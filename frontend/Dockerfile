@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-focal AS builder
 
 # Устанавливаем рабочую директорию
-WORKDIR /app/frontend
+WORKDIR /app
 
 # Устанавливаем Node.js
 RUN apt-get update && apt-get install -y curl && \
@@ -9,12 +9,11 @@ RUN apt-get update && apt-get install -y curl && \
     apt-get install -y nodejs && \
     npm install -g npm@10.2.4
 
-# Копируем файлы frontend приложения
-# Сначала копируем только package.json для лучшего кэширования
-COPY ./package*.json ./
-COPY ./ ./
+# Копируем все файлы frontend приложения
+COPY . ./
 
-# Проверяем наличие package.json
+# Проверяем структуру
+RUN ls -la
 RUN ls -la package.json || exit 1
 
 # Устанавливаем зависимости и собираем
@@ -36,8 +35,8 @@ RUN apt-get update && apt-get install -y curl && \
     npm install -g npm@10.2.4
 
 # Копируем собранное приложение
-COPY --from=builder /app/frontend/.output ./.output
-COPY --from=builder /app/frontend/package.json ./package.json
+COPY --from=builder /app/.output ./.output
+COPY --from=builder /app/package.json ./package.json
 
 ENV HOST=0.0.0.0
 ENV PORT=3000
