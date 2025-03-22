@@ -1,16 +1,20 @@
 <template>
   <div class="container">
-    <div class="charts-section">
-      <PriceChart
-        title="BTC/USDT (Mock)"
-        :data="store.mockData"
-        :isMock="true"
-      />
-      <PriceChart
-        title="BTC/USD (Coindesk)"
-        :data="store.coindeskData"
-        :isMock="false"
-      />
+    <div class="charts-grid">
+      <ClientOnly>
+        <PriceChart
+          v-if="store.mockData.length"
+          title="BTC/USDT (Mock)"
+          :data="store.mockData"
+          :isMock="true"
+        />
+        <PriceChart
+          v-if="store.coindeskData.length"
+          title="BTC/USD (Coindesk)"
+          :data="store.coindeskData"
+          :isMock="false"
+        />
+      </ClientOnly>
     </div>
 
     <div class="tables-section">
@@ -37,14 +41,10 @@ import DataTable from "~/components/DataTable.vue";
 const store = useMarketStore();
 
 onMounted(() => {
-  // Инициализация данных
-  store.generateMockData();
+  if (!store.mockData.length) {
+    store.generateMockData();
+  }
   store.fetchCoindeskData();
-
-  // Обновление данных каждую минуту
-  setInterval(() => {
-    store.fetchCoindeskData();
-  }, 60000);
 });
 </script>
 
@@ -53,11 +53,11 @@ onMounted(() => {
   padding: 20px;
 }
 
-.charts-section {
+.charts-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  margin-bottom: 24px;
+  padding: 20px;
 }
 
 .tables-section {
@@ -67,8 +67,7 @@ onMounted(() => {
 }
 
 @media (max-width: 1024px) {
-  .charts-section,
-  .tables-section {
+  .charts-grid {
     grid-template-columns: 1fr;
   }
 }
