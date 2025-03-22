@@ -18,19 +18,28 @@ RUN npm install
 # Копируем все файлы приложения
 COPY . .
 
-# Проверяем структуру проекта и содержимое файлов
+# Проверяем структуру проекта
 RUN echo "=== Project structure ===" && \
     ls -la && \
-    echo "=== Components ===" && \
+    echo "=== Components directory ===" && \
     ls -la components/ && \
-    echo "=== MockPrice.vue ===" && \
-    cat components/MockPrice.vue || echo "Missing MockPrice.vue" && \
-    echo "=== CoindeskPrice.vue ===" && \
-    cat components/CoindeskPrice.vue || echo "Missing CoindeskPrice.vue"
+    echo "=== Pages directory ===" && \
+    ls -la pages/
+
+# Проверяем содержимое ключевых файлов
+RUN echo "=== app.vue ===" && \
+    cat app.vue && \
+    echo "=== pages/index.vue ===" && \
+    cat pages/index.vue
 
 # Устанавливаем переменные окружения для сборки
 ENV NODE_ENV=production
 ENV NITRO_PRESET=node-server
+
+# Очищаем кэш npm и node_modules перед сборкой
+RUN npm cache clean --force && \
+    rm -rf node_modules && \
+    npm install
 
 # Запускаем сборку с подробным выводом
 RUN npm run build --verbose
