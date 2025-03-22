@@ -22,8 +22,28 @@ export const useMarketStore = defineStore('market', {
       const data: MarketData[] = [];
       const now = new Date();
       
-      for (let i = 0; i < 24; i++) {
-        const date = new Date(now.getTime() - i * 3600000);
+      // Пример данных из промпта
+      data.push({
+        date: new Date('2025-02-20'),
+        open: 30149.2,
+        close: 28568.72,
+        high: 31010.27,
+        low: 27905.33,
+        volume: 1744.95
+      });
+
+      data.push({
+        date: new Date('2025-02-21'),
+        open: 44824.49,
+        close: 46378.91,
+        high: 47089.52,
+        low: 44775.58,
+        volume: 3165.6
+      });
+
+      // Добавляем дополнительные данные
+      for (let i = 2; i < 24; i++) {
+        const date = new Date(now.getTime() - (23 - i) * 3600000);
         const basePrice = 40000 + Math.random() * 2000;
         
         data.push({
@@ -48,18 +68,23 @@ export const useMarketStore = defineStore('market', {
         const currentPrice = data.bpi.USD.rate_float;
         const now = new Date();
         
-        this.coindeskData.unshift({
+        // Добавляем новую точку данных
+        const newDataPoint = {
           date: now,
-          open: currentPrice,
+          open: currentPrice * 0.999,
           high: currentPrice * 1.001,
-          low: currentPrice * 0.999,
+          low: currentPrice * 0.998,
           close: currentPrice,
           volume: Math.random() * 1000000
-        });
+        };
 
-        if (this.coindeskData.length > 24) {
-          this.coindeskData = this.coindeskData.slice(0, 24);
+        // Обновляем массив данных
+        if (this.coindeskData.length === 0) {
+          this.coindeskData = [newDataPoint];
+        } else {
+          this.coindeskData = [newDataPoint, ...this.coindeskData.slice(0, 23)];
         }
+
       } catch (err) {
         this.error = 'Error fetching data';
         console.error(err);

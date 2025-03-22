@@ -1,6 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  ssr: true,
+  ssr: false,
   modules: [
     '@pinia/nuxt'
   ],
@@ -28,5 +28,9 @@ export default defineNuxtConfig({
   // Добавляем конфигурацию для Pinia
   pinia: {
     autoImports: ['defineStore', 'storeToRefs']
+  },
+  // Добавляем дату совместимости
+  compatibility: {
+    date: '2025-03-22'
   }
 })
