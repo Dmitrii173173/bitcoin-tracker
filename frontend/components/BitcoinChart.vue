@@ -1,29 +1,31 @@
 <template>
-  <div class="chart-container">
-    <div class="chart-header">
-      <div class="chart-title">
-        <h2>BTC/USDT</h2>
-        <span class="price">{{ currentPrice.toFixed(2) }} USDT</span>
+  <div class="chart-outer-container">
+    <div class="chart-container">
+      <div class="chart-header">
+        <div class="chart-title">
+          <h2>BTC/USDT</h2>
+          <span class="price">{{ currentPrice.toFixed(2) }} USDT</span>
+        </div>
+        <div class="chart-controls">
+          <button
+            v-for="period in periods"
+            :key="period"
+            :class="['period-btn', { active: selectedPeriod === period }]"
+            @click="changePeriod(period)"
+          >
+            {{ period }}
+          </button>
+        </div>
       </div>
-      <div class="chart-controls">
-        <button
-          v-for="period in periods"
-          :key="period"
-          :class="['period-btn', { active: selectedPeriod === period }]"
-          @click="changePeriod(period)"
-        >
-          {{ period }}
-        </button>
+      <div class="chart-wrapper">
+        <canvas ref="chartRef" width="400" height="400"></canvas>
       </div>
-    </div>
-    <div class="chart-wrapper">
-      <canvas ref="chartRef" height="400"></canvas>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import Chart from "chart.js/auto";
 
 const chartRef = ref<HTMLCanvasElement | null>(null);
@@ -68,7 +70,7 @@ const createChart = () => {
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      height: 400,
+      aspectRatio: 2,
       interaction: {
         intersect: false,
         mode: "index",
@@ -126,22 +128,41 @@ const changePeriod = (period: string) => {
 onMounted(() => {
   createChart();
 });
+
+onUnmounted(() => {
+  if (chart.value) {
+    chart.value.destroy();
+  }
+});
 </script>
 
 <style scoped>
+.chart-outer-container {
+  width: 100%;
+  max-width: 1200px;
+  height: 500px;
+  max-height: 500px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
 .chart-container {
   background-color: #0b0e11;
   border-radius: 8px;
   padding: 20px;
-  height: auto;
+  height: 100%;
+  max-height: 500px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  height: 60px;
+  min-height: 60px;
 }
 
 .chart-title {
@@ -192,8 +213,17 @@ onMounted(() => {
 }
 
 .chart-wrapper {
+  flex: 1;
+  height: calc(100% - 60px);
+  min-height: 0;
   position: relative;
-  height: 400px;
-  width: 100%;
+}
+
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
 }
 </style>
