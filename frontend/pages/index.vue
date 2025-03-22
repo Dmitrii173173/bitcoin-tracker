@@ -196,30 +196,28 @@ function getColorClass(current, reference) {
   return "";
 }
 
-// Создание и обновление графиков
+// Обновленная функция создания графика
 function createChart(canvas, data, label) {
   if (!canvas) return null;
 
+  // Создаем цвета для баров на основе open/close соотношения
+  const colors = data.map(item => item.close >= item.open ? '#02C076' : '#F6465D');
+
   return new Chart(canvas, {
-    type: "candlestick",
+    type: 'bar', // изменяем тип на bar вместо candlestick
     data: {
       datasets: [
         {
           label: label,
-          data: data.map((item) => ({
+          data: data.map(item => ({
             x: new Date(item.date),
-            o: item.open,
-            h: item.high,
-            l: item.low,
-            c: item.close,
+            y: [item.open, item.high, item.low, item.close], // все значения для OHLC
           })),
-          color: {
-            up: "#02C076",
-            down: "#F6465D",
-            unchanged: "#8E8E93",
-          },
-        },
-      ],
+          backgroundColor: colors,
+          borderColor: colors,
+          borderWidth: 1
+        }
+      ]
     },
     options: {
       responsive: true,
@@ -231,12 +229,12 @@ function createChart(canvas, data, label) {
         tooltip: {
           callbacks: {
             label: (context) => {
-              const item = context.raw;
+              const values = context.raw.y;
               return [
-                `Открытие: $${item.o.toFixed(2)}`,
-                `Максимум: $${item.h.toFixed(2)}`,
-                `Минимум: $${item.l.toFixed(2)}`,
-                `Закрытие: $${item.c.toFixed(2)}`,
+                `Открытие: $${values[0].toFixed(2)}`,
+                `Максимум: $${values[1].toFixed(2)}`,
+                `Минимум: $${values[2].toFixed(2)}`,
+                `Закрытие: $${values[3].toFixed(2)}`
               ];
             },
           },
@@ -244,28 +242,32 @@ function createChart(canvas, data, label) {
       },
       scales: {
         x: {
-          type: "time",
+          type: 'time',
           time: {
             unit: timeframeToTimeUnit(mockTimeframe.value),
           },
           ticks: {
-            color: "rgba(255, 255, 255, 0.7)",
+            color: 'rgba(255, 255, 255, 0.7)',
           },
           grid: {
-            color: "rgba(255, 255, 255, 0.1)",
+            color: 'rgba(255, 255, 255, 0.1)',
           },
         },
         y: {
-          position: "right",
+          position: 'right',
           ticks: {
-            color: "rgba(255, 255, 255, 0.7)",
+            color: 'rgba(255, 255, 255, 0.7)',
             callback: (value) => `$${value.toFixed(2)}`,
           },
           grid: {
-            color: "rgba(255, 255, 255, 0.1)",
+            color: 'rgba(255, 255, 255, 0.1)',
           },
         },
       },
+      parsing: {
+        xAxisKey: 'x',
+        yAxisKey: 'y[3]' // отображаем цену закрытия на основной оси
+      }
     },
   });
 }
@@ -286,18 +288,23 @@ function timeframeToTimeUnit(timeframe) {
   }
 }
 
-// Обновление графиков при изменении данных или таймфрейма
+// Обновленная функция для наблюдения за изменениями данных
 watch(
   [filteredMockData, mockTimeframe],
   () => {
     if (mockChart) {
+      const colors = filteredMockData.value.map(item => 
+        item.close >= item.open ? '#02C076' : '#F6465D'
+      );
+      
       mockChart.data.datasets[0].data = filteredMockData.value.map((item) => ({
         x: new Date(item.date),
-        o: item.open,
-        h: item.high,
-        l: item.low,
-        c: item.close,
+        y: [item.open, item.high, item.low, item.close],
       }));
+      
+      mockChart.data.datasets[0].backgroundColor = colors;
+      mockChart.data.datasets[0].borderColor = colors;
+      
       mockChart.options.scales.x.time.unit = timeframeToTimeUnit(
         mockTimeframe.value
       );
@@ -307,19 +314,23 @@ watch(
   { deep: true }
 );
 
+// Аналогично обновляем функцию наблюдения за coindeskData
 watch(
   [filteredCoindeskData, coindeskTimeframe],
   () => {
     if (coindeskChart) {
-      coindeskChart.data.datasets[0].data = filteredCoindeskData.value.map(
-        (item) => ({
-          x: new Date(item.date),
-          o: item.open,
-          h: item.high,
-          l: item.low,
-          c: item.close,
-        })
+      const colors = filteredCoindeskData.value.map(item => 
+        item.close >= item.open ? '#02C076' : '#F6465D'
       );
+      
+      coindeskChart.data.datasets[0].data = filteredCoindeskData.value.map((item) => ({
+        x: new Date(item.date),
+        y: [item.open, item.high, item.low, item.close],
+      }));
+      
+      coindeskChart.data.datasets[0].backgroundColor = colors;
+      coindeskChart.data.datasets[0].borderColor = colors;
+      
       coindeskChart.options.scales.x.time.unit = timeframeToTimeUnit(
         coindeskTimeframe.value
       );
@@ -467,7 +478,19 @@ onMounted(() => {
   background: #1a1d20;
   border-radius: 8px;
   padding: 20px;
-  height: 400px;
+  height: 450px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+canvas {
+  flex: 1;
 }
 
 .chart-header {
@@ -560,6 +583,10 @@ th {
 
   .content-wrapper > * {
     flex: 1;
+  }
+}
+</style>
+
   }
 }
 </style>
