@@ -1,11 +1,11 @@
 <template>
-  <div class="container">
-    <h1>Bitcoin Price Tracker</h1>
-    <div class="chart-wrapper"><PriceChart /></div>
+  <div>
+    <h1>Bitcoin Tracker</h1>
+    <PriceChart />
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted } from "vue";
 import PriceChart from "~/components/PriceChart.vue";
 

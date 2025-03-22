@@ -9,42 +9,35 @@ RUN apt-get update && apt-get install -y curl && \
     apt-get install -y nodejs && \
     npm install -g npm@10.2.4
 
-# Копируем только package.json сначала для лучшего кэширования
+# Копируем package.json и package-lock.json
 COPY package*.json ./
-
-# Проверяем содержимое package.json
-RUN echo "=== Package.json contents ===" && cat package.json
 
 # Устанавливаем зависимости
 RUN npm install
 
-# Проверяем установленные модули
-RUN echo "=== Node modules ===" && \
-    ls -la node_modules/.bin/nuxt || echo "Nuxt binary not found!"
-
-# Теперь копируем остальные файлы приложения
+# Копируем все файлы приложения
 COPY . .
 
-# Проверяем структуру до сборки
-RUN echo "=== Directory structure ===" && \
+# Проверяем структуру проекта
+RUN echo "=== Project structure ===" && \
     ls -la && \
-    echo "=== nuxt.config.ts contents ===" && \
-    cat nuxt.config.ts
+    echo "=== Pages directory ===" && \
+    ls -la pages || echo "No pages directory!" && \
+    echo "=== Components directory ===" && \
+    ls -la components || echo "No components directory!" && \
+    echo "=== App.vue ===" && \
+    cat app.vue || echo "No app.vue found!"
 
 # Устанавливаем переменные окружения для сборки
 ENV NODE_ENV=production
 ENV NITRO_PRESET=node-server
 
-# Запускаем сборку с отладкой
-RUN npx nuxt build --verbose
+# Запускаем сборку
+RUN npm run build
 
 # Проверяем результат сборки
-RUN echo "=== Current directory ===" && \
-    pwd && \
-    echo "=== Directory contents ===" && \
-    ls -la && \
-    echo "=== Build output ===" && \
-    ls -la .output/server/index.mjs || (echo "=== Build failed, checking .nuxt ===" && ls -la .nuxt)
+RUN echo "=== Build output ===" && \
+    ls -la .output/server/index.mjs || echo "Build failed!"
 
 # Финальный этап
 FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-focal

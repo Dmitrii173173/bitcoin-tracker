@@ -1,11 +1,5 @@
 <template>
-  <div class="app-container">
-    <h1>Bitcoin Price Analytics</h1>
-    <div class="charts-grid">
-      <MockPrice />
-      <CoindeskPrice />
-    </div>
-  </div>
+  <div><NuxtPage /></div>
 </template>
 
 <script setup>
