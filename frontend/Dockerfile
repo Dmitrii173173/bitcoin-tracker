@@ -12,8 +12,15 @@ RUN apt-get update && apt-get install -y curl && \
 # Копируем только package.json сначала для лучшего кэширования
 COPY package*.json ./
 
+# Проверяем содержимое package.json
+RUN echo "=== Package.json contents ===" && cat package.json
+
 # Устанавливаем зависимости
 RUN npm install
+
+# Проверяем установленные модули
+RUN echo "=== Node modules ===" && \
+    ls -la node_modules/.bin/nuxt || echo "Nuxt binary not found!"
 
 # Теперь копируем остальные файлы приложения
 COPY . .
@@ -26,14 +33,17 @@ RUN echo "=== Directory structure ===" && \
 
 # Устанавливаем переменные окружения для сборки
 ENV NODE_ENV=production
-ENV NUXT_APP_CDN_URL=https://your-cdn-url.com
 ENV NITRO_PRESET=node-server
 
 # Запускаем сборку с отладкой
-RUN NODE_ENV=production npm run build --verbose
+RUN npx nuxt build --verbose
 
 # Проверяем результат сборки
-RUN echo "=== Build output ===" && \
+RUN echo "=== Current directory ===" && \
+    pwd && \
+    echo "=== Directory contents ===" && \
+    ls -la && \
+    echo "=== Build output ===" && \
     ls -la .output/server/index.mjs || (echo "=== Build failed, checking .nuxt ===" && ls -la .nuxt)
 
 # Финальный этап
@@ -54,7 +64,6 @@ COPY --from=builder /app/frontend/package.json ./package.json
 ENV HOST=0.0.0.0
 ENV PORT=3000
 ENV NODE_ENV=production
-ENV NITRO_PRESET=node-server
 
 EXPOSE 3000
 
