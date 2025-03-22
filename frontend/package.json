@@ -16,6 +16,7 @@
     "@nuxt/types": "^2.15.8",
     "@nuxt/typescript-build": "^2.1.0",
     "@types/node": "^18",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vue-tsc": "^1.8.27"
   }
 }

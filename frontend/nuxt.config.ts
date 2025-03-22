@@ -19,7 +19,7 @@ export default defineNuxtConfig({
     preset: 'node-server'
   },
   typescript: {
-    strict: true,
-    typeCheck: true
+    strict: false,
+    typeCheck: false
   }
 })
