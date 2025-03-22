@@ -23,6 +23,10 @@ export default defineNuxtConfig({
     typeCheck: false
   },
   modules: [
-    '@pinia/nuxt',
-  ]
+    '@pinia/nuxt'
+  ],
+  // Добавляем конфигурацию для Pinia
+  pinia: {
+    autoImports: ['defineStore', 'storeToRefs']
+  }
 })

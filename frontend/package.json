@@ -10,10 +10,11 @@
     "start": "node .output/server/index.mjs"
   },
   "dependencies": {
+    "@pinia/nuxt": "^0.5.1",
+    "pinia": "^2.1.7",
     "chart.js": "^4.0.0",
     "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^2.30.0",
-    "pinia": "^2.0.0",
     "vue": "^3.0.0"
   },
   "devDependencies": {
