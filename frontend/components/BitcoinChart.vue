@@ -18,21 +18,18 @@
         </div>
       </div>
       <div class="chart-wrapper">
-        <apexchart
-          type="line"
-          height="400"
-          :options="chartOptions"
-          :series="series"
-        />
+        <canvas ref="chartRef" height="400"></canvas>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import VueApexCharts from "vue3-apexcharts";
+import { ref, onMounted, onUnmounted } from "vue";
+import Chart from "chart.js/auto";
 
+const chartRef = ref<HTMLCanvasElement | null>(null);
+const chart = ref<Chart | null>(null);
 const periods = ["1H", "24H", "7D", "1M"];
 const selectedPeriod = ref("24H");
 
@@ -43,53 +40,49 @@ const mockData = Array.from({ length: 12 }, (_, i) => ({
 
 const currentPrice = ref(mockData[0].price);
 
-const chartOptions = {
-  chart: {
+const createChart = () => {
+  if (!chartRef.value) return;
+
+  if (chart.value) {
+    chart.value.destroy();
+  }
+
+  chart.value = new Chart(chartRef.value, {
     type: "line",
-    height: 400,
-    foreColor: "#848E9C",
-    toolbar: { show: false },
-    background: "transparent",
-  },
-  stroke: {
-    curve: "smooth",
-    width: 2,
-  },
-  grid: {
-    borderColor: "rgba(255, 255, 255, 0.05)",
-    padding: { left: 10, right: 10 },
-  },
-  xaxis: {
-    categories: mockData.map((d) => d.time).reverse(),
-    labels: {
-      style: { colors: "#848E9C" },
+    data: {
+      labels: mockData.map((d) => d.time).reverse(),
+      datasets: [
+        {
+          data: mockData.map((d) => d.price).reverse(),
+          borderColor: "#02C076",
+          backgroundColor: "rgba(2, 192, 118, 0.1)",
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          borderWidth: 2,
+        },
+      ],
     },
-  },
-  yaxis: {
-    labels: {
-      style: { colors: "#848E9C" },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2,
+      plugins: {
+        legend: { display: false },
+      },
     },
-  },
-  tooltip: {
-    theme: "dark",
-  },
-  fill: {
-    type: "gradient",
-    gradient: {
-      shade: "dark",
-      type: "vertical",
-      opacityFrom: 0.5,
-      opacityTo: 0,
-    },
-  },
+  });
 };
 
-const series = [
-  {
-    name: "BTC/USDT",
-    data: mockData.map((d) => d.price).reverse(),
-  },
-];
+onMounted(() => {
+  createChart();
+});
+
+onUnmounted(() => {
+  if (chart.value) {
+    chart.value.destroy();
+  }
+});
 
 const changePeriod = (period: string) => {
   selectedPeriod.value = period;
@@ -99,7 +92,7 @@ const changePeriod = (period: string) => {
 <style scoped>
 .chart-outer-container {
   width: 100%;
-  height: 500px;
+  height: 400px;
   overflow: hidden;
 }
 
@@ -107,7 +100,7 @@ const changePeriod = (period: string) => {
   background-color: #0b0e11;
   border-radius: 8px;
   padding: 20px;
-  height: 500px;
+  height: 100%;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -167,9 +160,7 @@ const changePeriod = (period: string) => {
 }
 
 .chart-wrapper {
-  flex: 1;
-  height: calc(100% - 60px);
-  min-height: 0;
+  height: 320px;
   position: relative;
 }
 

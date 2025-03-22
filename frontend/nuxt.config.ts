@@ -28,10 +28,8 @@ export default defineNuxtConfig({
       'window.global': {}
     }
   },
-  modules: [
-    'vue3-apexcharts'
-  ],
+  modules: [],
   build: {
-    transpile: ['vue3-apexcharts', 'apexcharts']
+    transpile: ['chart.js']
   }
 })
