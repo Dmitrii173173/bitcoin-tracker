@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { CandlestickData, CoindeskData } from '~/types';
+import { useMarketStore } from "~/stores/marketStore"; // Убедитесь, что путь правильный
 
 export const useMarketDataStore = defineStore('marketData', () => {
   // Mock данные
@@ -36,7 +37,7 @@ export const useMarketDataStore = defineStore('marketData', () => {
       loading.value = true;
       const response = await fetch('/data/bitcoin_data.json');
       const jsonData = await response.json();
-      console.log(jsonData); // Добавьте эту строку для проверки данных
+      console.log(jsonData); // Для проверки данных
       const now = new Date();
       const mockEntries: CandlestickData[] = [];
       
