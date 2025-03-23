@@ -19,7 +19,7 @@ export const useMarketStore = defineStore('market', () => {
   async function generateMockData() {
     try {
       loading.value = true
-      const response = await fetch('/frontend/data/bitcoin_data.json')
+      const response = await fetch('/data/bitcoin_data.json')
       const jsonData = await response.json()
       
       const data = jsonData.map(item => ({
