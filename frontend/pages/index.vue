@@ -203,81 +203,99 @@ function getColorClass(current, reference) {
 
 // Создание и обновление графиков
 function createChart(canvas, data, label) {
-  if (!canvas) return null;
+  if (!canvas) {
+    console.error('Canvas element is null');
+    return null;
+  }
+  
+  if (!data || data.length === 0) {
+    console.error('No data provided for chart');
+    return null;
+  }
 
-  // Создаем цвета для баров на основе open/close соотношения
-  const colors = data.map((item) =>
-    item.close >= item.open ? "#02C076" : "#F6465D"
-  );
+  try {
+    // Создаем цвета для баров на основе open/close соотношения
+    const colors = data.map((item) =>
+      item.close >= item.open ? "#02C076" : "#F6465D"
+    );
 
-  return new Chart(canvas, {
-    type: "bar",
-    data: {
-      datasets: [
-        {
-          label: label,
-          data: data.map((item) => ({
-            x: new Date(item.date),
-            y: [item.open, item.high, item.low, item.close],
-          })),
-          backgroundColor: colors,
-          borderColor: colors,
-          borderWidth: 1,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false,
-        },
-        tooltip: {
-          callbacks: {
-            label: (context) => {
-              const values = context.raw.y;
-              return [
-                `Открытие: $${values[0].toFixed(2)}`,
-                `Максимум: $${values[1].toFixed(2)}`,
-                `Минимум: $${values[2].toFixed(2)}`,
-                `Закрытие: $${values[3].toFixed(2)}`,
-              ];
+    const chartData = data.map((item) => ({
+      x: new Date(item.date),
+      y: [item.open, item.high, item.low, item.close],
+    }));
+
+    console.log('Chart data prepared:', chartData.length, 'items');
+
+    return new Chart(canvas, {
+      type: "bar",
+      data: {
+        datasets: [
+          {
+            label: label,
+            data: chartData,
+            backgroundColor: colors,
+            borderColor: colors,
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const values = context.raw.y;
+                return [
+                  `Открытие: $${values[0].toFixed(2)}`,
+                  `Максимум: $${values[1].toFixed(2)}`,
+                  `Минимум: $${values[2].toFixed(2)}`,
+                  `Закрытие: $${values[3].toFixed(2)}`,
+                ];
+              },
             },
           },
         },
-      },
-      scales: {
-        x: {
-          type: "time",
-          time: {
-            unit: timeframeToTimeUnit(mockTimeframe.value),
+        scales: {
+          x: {
+            type: "time",
+            time: {
+              unit: timeframeToTimeUnit(mockTimeframe.value),
+            },
+            ticks: {
+              color: "rgba(255, 255, 255, 0.7)",
+            },
+            grid: {
+              color: "rgba(255, 255, 255, 0.1)",
+            },
           },
-          ticks: {
-            color: "rgba(255, 255, 255, 0.7)",
-          },
-          grid: {
-            color: "rgba(255, 255, 255, 0.1)",
+          y: {
+            position: "right",
+            ticks: {
+              color: "rgba(255, 255, 255, 0.7)",
+              callback: (value) => `$${value.toFixed(2)}`,
+            },
+            grid: {
+              color: "rgba(255, 255, 255, 0.1)",
+            },
           },
         },
-        y: {
-          position: "right",
-          ticks: {
-            color: "rgba(255, 255, 255, 0.7)",
-            callback: (value) => `$${value.toFixed(2)}`,
-          },
-          grid: {
-            color: "rgba(255, 255, 255, 0.1)",
-          },
+        parsing: {
+          xAxisKey: "x",
+          yAxisKey: "y[3]",
         },
       },
-      parsing: {
-        xAxisKey: "x",
-        yAxisKey: "y[3]",
-      },
-    },
-  });
+    });
+  } catch (error) {
+    console.error('Error creating chart:', error);
+    return null;
+  }
 }
+
 
 // Обновление графиков при изменении данных или таймфрейма
 watch(
