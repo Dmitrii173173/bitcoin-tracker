@@ -8,7 +8,6 @@ export function useApiData() {
   const fetchDatabaseData = async () => {
     try {
       loading.value = true
-      // Предполагаем, что API находится на том же домене
       const response = await fetch('/api/bitcoin-data')
       dbData.value = await response.json()
     } catch (e) {

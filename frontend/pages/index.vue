@@ -214,15 +214,17 @@ function createChart(canvas, data, label) {
   }
 
   try {
-    // Создаем цвета для баров на основе open/close соотношения
-    const colors = data.map((item) =>
-      item.close >= item.open ? "#02C076" : "#F6465D"
-    );
-
+    // Подготовка данных для линейного графика
     const chartData = data.map((item) => ({
       x: new Date(item.date),
-      y: [item.open, item.high, item.low, item.close],
+      y: item.close // Используем только цену закрытия для линейного графика
     }));
+
+    // Создаем градиент для заливки под линией
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(2, 192, 118, 0.2)');
+    gradient.addColorStop(1, 'rgba(2, 192, 118, 0)');
 
     console.log('Chart data prepared:', chartData.length, 'items');
 
@@ -380,18 +382,26 @@ async function fetchCoindeskData() {
 }
 
 // Инициализация при монтировании
+// Инициализация при монтировании
 onMounted(() => {
   store.generateMockData();
   store.fetchCoindeskData();
 
+  // Добавим логи для отладки
+  console.log('Mock data length:', store.mockData?.length);
+
   // Создаем графики после получения данных
   setTimeout(() => {
-    if (mockChartRef.value && store.mockData.length) {
+    console.log('mockChartRef exists:', !!mockChartRef.value);
+    console.log('mockData available:', !!store.mockData?.length);
+    
+    if (mockChartRef.value && store.mockData.length) { // Исправлено здесь
       mockChart = createChart(
         mockChartRef.value,
         filteredMockData.value,
         "BTC/USDT (Mock)"
       );
+      console.log('Mock chart created:', !!mockChart);
     }
 
     if (coindeskChartRef.value && store.coindeskData.length) {
@@ -401,13 +411,14 @@ onMounted(() => {
         "BTC/USD (Coindesk)"
       );
     }
-  }, 100);
+  }, 500); // Увеличил таймаут для уверенности, что данные загрузятся
 
   // Обновляем данные каждую минуту
   setInterval(() => {
     store.fetchCoindeskData();
   }, 60000);
 });
+
 </script>
 
 <style scoped>
