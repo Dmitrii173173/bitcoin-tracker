@@ -363,7 +363,7 @@ async function fetchCoindeskData() {
 
 // Инициализация при монтировании
 onMounted(() => {
-  store.generateMockData();
+  store.initializeMockData();
   store.fetchCoindeskData();
 
   // Создаем графики после получения данных
@@ -389,6 +389,8 @@ onMounted(() => {
   setInterval(() => {
     store.fetchCoindeskData();
   }, 60000);
+
+  console.log(jsonData); // Добавьте эту строку для проверки данных
 });
 </script>
 
