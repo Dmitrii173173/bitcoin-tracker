@@ -31,24 +31,34 @@ export const useMarketDataStore = defineStore('marketData', () => {
   };
   
   // Инициализация mock данных
-  const initializeMockData = () => {
-    const now = new Date();
-    const mockEntries: CandlestickData[] = [];
-    
-    for (let i = 0; i < 24; i++) {
-      const date = new Date(now.getTime() - i * 3600000);
-      mockEntries.push({
-        date,
-        open: 40000 + Math.random() * 2000,
-        high: 41000 + Math.random() * 2000,
-        low: 39000 + Math.random() * 2000,
-        close: 40500 + Math.random() * 2000,
-        volume: Math.random() * 1000000
-      });
+  const initializeMockData = async () => {
+    try {
+      loading.value = true;
+      const response = await fetch('/data/bitcoin_data.json');
+      const jsonData = await response.json();
+      console.log(jsonData); // Добавьте эту строку для проверки данных
+      const now = new Date();
+      const mockEntries: CandlestickData[] = [];
+      
+      for (let i = 0; i < 24; i++) {
+        const date = new Date(now.getTime() - i * 3600000);
+        mockEntries.push({
+          date,
+          open: 40000 + Math.random() * 2000,
+          high: 41000 + Math.random() * 2000,
+          low: 39000 + Math.random() * 2000,
+          close: 40500 + Math.random() * 2000,
+          volume: Math.random() * 1000000
+        });
+      }
+      
+      mockData.value = mockEntries;
+      localStorage.setItem('mockData', JSON.stringify(mockEntries));
+    } catch (error) {
+      console.error('Error initializing mock data:', error);
+    } finally {
+      loading.value = false;
     }
-    
-    mockData.value = mockEntries;
-    localStorage.setItem('mockData', JSON.stringify(mockEntries));
   };
   
   // Загрузка сохраненных данных при инициализации
@@ -105,6 +115,12 @@ export const useMarketDataStore = defineStore('marketData', () => {
       loading.value = false;
     }
   };
+  
+  const filteredMockData = computed(() => {
+    const data = filterDataByTimeframe(mockData.value, mockTimeframe.value);
+    console.log(data); // Добавьте эту строку для проверки отфильтрованных данных
+    return data;
+  });
   
   return {
     mockData,

@@ -203,101 +203,81 @@ function getColorClass(current, reference) {
 
 // Создание и обновление графиков
 function createChart(canvas, data, label) {
-  if (!canvas) {
-    console.error('Canvas element is null');
-    return null;
-  }
-  
-  if (!data || data.length === 0) {
-    console.error('No data provided for chart');
-    return null;
-  }
+  if (!canvas) return null;
 
-  try {
-    // Подготовка данных для линейного графика
-    const chartData = data.map((item) => ({
-      x: new Date(item.date),
-      y: item.close // Используем только цену закрытия для линейного графика
-    }));
+  // Создаем цвета для баров на основе open/close соотношения
+  const colors = data.map((item) =>
+    item.close >= item.open ? "#02C076" : "#F6465D"
+  );
 
-    // Создаем градиент для заливки под линией
-    const ctx = canvas.getContext('2d');
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(2, 192, 118, 0.2)');
-    gradient.addColorStop(1, 'rgba(2, 192, 118, 0)');
-
-    console.log('Chart data prepared:', chartData.length, 'items');
-
-    return new Chart(canvas, {
-      type: "bar",
-      data: {
-        datasets: [
-          {
-            label: label,
-            data: chartData,
-            backgroundColor: colors,
-            borderColor: colors,
-            borderWidth: 1,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false,
-          },
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                const values = context.raw.y;
-                return [
-                  `Открытие: $${values[0].toFixed(2)}`,
-                  `Максимум: $${values[1].toFixed(2)}`,
-                  `Минимум: $${values[2].toFixed(2)}`,
-                  `Закрытие: $${values[3].toFixed(2)}`,
-                ];
-              },
-            },
-          },
+  return new Chart(canvas, {
+    type: "bar",
+    data: {
+      datasets: [
+        {
+          label: label,
+          data: data.map((item) => ({
+            x: new Date(item.date),
+            y: [item.open, item.high, item.low, item.close],
+          })),
+          backgroundColor: colors,
+          borderColor: colors,
+          borderWidth: 1,
         },
-        scales: {
-          x: {
-            type: "time",
-            time: {
-              unit: timeframeToTimeUnit(mockTimeframe.value),
-            },
-            ticks: {
-              color: "rgba(255, 255, 255, 0.7)",
-            },
-            grid: {
-              color: "rgba(255, 255, 255, 0.1)",
-            },
-          },
-          y: {
-            position: "right",
-            ticks: {
-              color: "rgba(255, 255, 255, 0.7)",
-              callback: (value) => `$${value.toFixed(2)}`,
-            },
-            grid: {
-              color: "rgba(255, 255, 255, 0.1)",
-            },
-          },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
         },
-        parsing: {
-          xAxisKey: "x",
-          yAxisKey: "y[3]",
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const values = context.raw.y;
+              return [
+                `Открытие: $${values[0].toFixed(2)}`,
+                `Максимум: $${values[1].toFixed(2)}`,
+                `Минимум: $${values[2].toFixed(2)}`,
+                `Закрытие: $${values[3].toFixed(2)}`,
+              ];
+            },
+          },
         },
       },
-    });
-  } catch (error) {
-    console.error('Error creating chart:', error);
-    return null;
-  }
+      scales: {
+        x: {
+          type: "time",
+          time: {
+            unit: timeframeToTimeUnit(mockTimeframe.value),
+          },
+          ticks: {
+            color: "rgba(255, 255, 255, 0.7)",
+          },
+          grid: {
+            color: "rgba(255, 255, 255, 0.1)",
+          },
+        },
+        y: {
+          position: "right",
+          ticks: {
+            color: "rgba(255, 255, 255, 0.7)",
+            callback: (value) => `$${value.toFixed(2)}`,
+          },
+          grid: {
+            color: "rgba(255, 255, 255, 0.1)",
+          },
+        },
+      },
+      parsing: {
+        xAxisKey: "x",
+        yAxisKey: "y[3]",
+      },
+    },
+  });
 }
-
 
 // Обновление графиков при изменении данных или таймфрейма
 watch(
@@ -382,26 +362,18 @@ async function fetchCoindeskData() {
 }
 
 // Инициализация при монтировании
-// Инициализация при монтировании
 onMounted(() => {
   store.generateMockData();
   store.fetchCoindeskData();
 
-  // Добавим логи для отладки
-  console.log('Mock data length:', store.mockData?.length);
-
   // Создаем графики после получения данных
   setTimeout(() => {
-    console.log('mockChartRef exists:', !!mockChartRef.value);
-    console.log('mockData available:', !!store.mockData?.length);
-    
-    if (mockChartRef.value && store.mockData.length) { // Исправлено здесь
+    if (mockChartRef.value && store.mockData.length) {
       mockChart = createChart(
         mockChartRef.value,
         filteredMockData.value,
         "BTC/USDT (Mock)"
       );
-      console.log('Mock chart created:', !!mockChart);
     }
 
     if (coindeskChartRef.value && store.coindeskData.length) {
@@ -411,14 +383,13 @@ onMounted(() => {
         "BTC/USD (Coindesk)"
       );
     }
-  }, 500); // Увеличил таймаут для уверенности, что данные загрузятся
+  }, 100);
 
   // Обновляем данные каждую минуту
   setInterval(() => {
     store.fetchCoindeskData();
   }, 60000);
 });
-
 </script>
 
 <style scoped>
