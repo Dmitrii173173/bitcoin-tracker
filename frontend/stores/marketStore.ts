@@ -22,7 +22,7 @@ export const useMarketStore = defineStore('market', () => {
       const response = await fetch('/data/bitcoin_data.json')
       const jsonData = await response.json()
       
-      const data = jsonData.map(item => ({
+      const data = jsonData.map((item: any) => ({
         date: new Date(item.date),
         open: parseFloat(item.open),
         high: parseFloat(item.high),

@@ -116,13 +116,35 @@ export const useMarketDataStore = defineStore('marketData', () => {
       loading.value = false;
     }
   };
+  const filterDataByTimeframe = (data: any[], timeframe: string) => {
+    if (!data || !timeframe) return [];
+    
+    const now = new Date();
+    const filtered = data.filter(item => {
+      const itemDate = new Date(item.date);
+      switch (timeframe) {
+        case '1H':
+          return now.getTime() - itemDate.getTime() <= 3600000;
+        case '24H':
+          return now.getTime() - itemDate.getTime() <= 86400000;
+        case '7D':
+          return now.getTime() - itemDate.getTime() <= 604800000;
+        case '1M':
+          return now.getTime() - itemDate.getTime() <= 2592000000;
+        default:
+          return true;
+      }
+    });
+    return filtered;
+  };
+
+  const mockTimeframe = ref('24H');
   
   const filteredMockData = computed(() => {
     const data = filterDataByTimeframe(mockData.value, mockTimeframe.value);
     console.log(data); // Добавьте эту строку для проверки отфильтрованных данных
     return data;
   });
-  
   return {
     mockData,
     coindeskData,
