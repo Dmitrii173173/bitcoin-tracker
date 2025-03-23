@@ -1,7 +1,7 @@
 <template>
   <div>
     <nav class="navigation">
-      <NuxtLink to="/" class="nav-link">Графики</NuxtLink>
+      <NuxtLink to="/" class="nav-link">Главная</NuxtLink>
       <NuxtLink to="/database" class="nav-link">База данных</NuxtLink>
     </nav>
     <NuxtPage />
@@ -10,23 +10,21 @@
 
 <style>
 :root {
-  --app-background: #f5f7fa;
-  --card-background: rgba(255, 255, 255, 0.95);
-  --blur-background: rgba(247, 248, 249, 0.7);
-  --text-primary: #1d1d1f;
-  --text-secondary: #86868b;
-  --accent-color: #007aff;
-  --accent-gradient: linear-gradient(135deg, #007aff, #5856d6);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --app-background: #0b0e11;
+  --card-background: #1a1d20;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --accent-color: #02c076;
+  --accent-negative: #f6465d;
+  --border-color: rgba(255, 255, 255, 0.1);
 }
 
 body {
   margin: 0;
   padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--app-background);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-  -webkit-font-smoothing: antialiased;
+  color: var(--text-primary);
 }
 
 .app-container {
@@ -59,24 +57,23 @@ h1 {
 }
 
 .navigation {
-  padding: 16px 24px;
-  background: var(--card-background);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   display: flex;
   gap: 16px;
+  padding: 16px 24px;
+  background: var(--card-background);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .nav-link {
-  color: var(--text-primary);
   text-decoration: none;
+  color: var(--text-primary);
   padding: 8px 16px;
   border-radius: 6px;
   transition: all 0.2s;
 }
 
 .nav-link:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .nav-link.router-link-active {

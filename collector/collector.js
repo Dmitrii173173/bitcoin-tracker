@@ -24,3 +24,4 @@ const fetchPrice = async () => {
 }
 
 setInterval(fetchPrice, 60000)
+
