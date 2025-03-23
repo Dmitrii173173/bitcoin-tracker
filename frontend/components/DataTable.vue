@@ -36,35 +36,45 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
-  title: string;
-  data: any[];
+import { defineProps } from 'vue';
+
+type DataItem = {
+  date: string | number | Date;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+};
+
+defineProps<{ 
+  title: string; 
+  data: DataItem[];
   onRefresh: () => void;
 }>();
 
-const formatDate = (date: Date) => {
-  return new Date(date).toLocaleString();
+const formatDate = (date: string | number | Date): string => {
+  return new Date(date).toLocaleString('ru-RU', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 };
 
-const formatNumber = (value: number) => {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+const formatNumber = (value: number): string => {
+  return value.toFixed(2);
 };
 
-const formatVolume = (volume: number) => {
-  if (volume >= 1000000) return `${(volume / 1000000).toFixed(2)}M`;
-  if (volume >= 1000) return `${(volume / 1000).toFixed(2)}K`;
-  return volume.toString();
+const formatVolume = (volume: number): string => {
+  return volume >= 1_000_000 ? `${(volume / 1_000_000).toFixed(2)}M` :
+         volume >= 1_000 ? `${(volume / 1_000).toFixed(2)}K` :
+         volume.toString();
 };
 
-const getPriceClass = (current: number, reference: number) => {
-  return current > reference
-    ? "positive"
-    : current < reference
-    ? "negative"
-    : "";
+const getPriceClass = (current: number, reference: number): string => {
+  return current > reference ? 'positive' : current < reference ? 'negative' : '';
 };
 </script>
 
@@ -81,12 +91,6 @@ const getPriceClass = (current: number, reference: number) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-}
-
-.table-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 500;
 }
 
 .refresh-button {
@@ -112,8 +116,7 @@ table {
   border-collapse: collapse;
 }
 
-th,
-td {
+th, td {
   padding: 12px;
   text-align: right;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -130,20 +133,5 @@ th {
 
 .negative {
   color: #f6465d;
-}
-
-@media (max-width: 768px) {
-  .table-wrapper {
-    margin: 0 -20px;
-  }
-
-  table {
-    font-size: 14px;
-  }
-
-  th,
-  td {
-    padding: 8px;
-  }
 }
 </style>

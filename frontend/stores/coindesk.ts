@@ -1,7 +1,16 @@
 import { defineStore } from 'pinia'
 import { pinia } from '~/composables/usePinia'
 
-export const useCoindeskStore = defineStore('coindesk', {
+interface CoindeskState {
+  priceHistory: Array<{ timestamp: Date; price: number }>;
+  currentPrice: number;
+  high: number;
+  low: number;
+  volume: number;
+  change: string;
+}
+
+export const useCoindeskStore = defineStore<'coindesk', CoindeskState>('coindesk', {
   state: () => ({
     priceHistory: [] as Array<{timestamp: Date; price: number}>,
     currentPrice: 0,
@@ -17,6 +26,7 @@ export const useCoindeskStore = defineStore('coindesk', {
         const response = await fetch('https://api.coindesk.com/v1/bpi/currentprice.json')
         const data = await response.json()
         
+        console.log(data); // Для проверки данных
         this.currentPrice = parseFloat(data.bpi.USD.rate.replace(',', ''))
         
         // Генерируем временные точки для графика
