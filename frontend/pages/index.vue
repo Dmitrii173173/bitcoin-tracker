@@ -4,9 +4,21 @@
       <h2 class="section-title">Mock Data</h2>
       <div class="content-wrapper">
         <div class="chart-container">
-          <div class="chart-header"><h3>BTC/USDT (Mock)</h3></div>
+          <div class="chart-header">
+            <h3>BTC/USDT (Mock)</h3>
+            <div class="timeframe-selector">
+              <button
+                v-for="period in timeframes"
+                :key="period.value"
+                :class="{ active: selectedPeriod === period.value }"
+                @click="selectedPeriod = period.value"
+              >
+                {{ period.label }}
+              </button>
+            </div>
+          </div>
           <ClientOnly>
-            <canvas v-if="store.mockData.length" ref="mockChartRef"></canvas>
+            <canvas v-if="filteredData.length" ref="mockChartRef"></canvas>
             <div v-else class="chart-placeholder">
               <p>Нет данных для отображения</p>
             </div>
@@ -23,10 +35,11 @@
                 <th>Минимум</th>
                 <th>Закрытие</th>
                 <th>Объем</th>
+                <th>Период</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in store.mockData" :key="index">
+              <tr v-for="(item, index) in filteredData" :key="index">
                 <td>{{ new Date(item.date).toLocaleString() }}</td>
                 <td :class="getColorClass(item.open, item.close)">
                   ${{ item.open.toFixed(2) }}
@@ -37,6 +50,7 @@
                   ${{ item.close.toFixed(2) }}
                 </td>
                 <td>{{ formatVolume(item.volume) }}</td>
+                <td>{{ item.period }}</td>
               </tr>
             </tbody>
           </table>
@@ -100,12 +114,29 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import Chart from "chart.js/auto";
 import { useMarketStore } from "~/stores/marketStore";
 
 // Хранилище данных
 const store = useMarketStore();
+
+// Выбранный период времени
+const selectedPeriod = ref("day");
+
+// Временные периоды для выбора
+const timeframes = [
+  { label: "День", value: "day" },
+  { label: "Неделя", value: "week" },
+  { label: "Месяц", value: "month" },
+  { label: "Год", value: "year" },
+];
+
+// Фильтрация данных по периоду
+const filteredData = computed(() => {
+  if (!store.mockData.length) return [];
+  return store.mockData.filter((item) => item.period === selectedPeriod.value);
+});
 
 // Ссылки на графики
 const mockChartRef = ref(null);
@@ -152,11 +183,32 @@ function createChart(canvas, data, label) {
         legend: {
           display: true,
         },
+        tooltip: {
+          callbacks: {
+            title: (tooltipItems) => {
+              const date = new Date(data[tooltipItems[0].dataIndex].date);
+              return date.toLocaleDateString();
+            },
+            label: (context) => {
+              const dataPoint = data[context.dataIndex];
+              return [
+                `Закрытие: $${dataPoint.close.toFixed(2)}`,
+                `Открытие: $${dataPoint.open.toFixed(2)}`,
+                `Максимум: $${dataPoint.high.toFixed(2)}`,
+                `Минимум: $${dataPoint.low.toFixed(2)}`,
+                `Объем: ${formatVolume(dataPoint.volume)}`,
+              ];
+            },
+          },
+        },
       },
       scales: {
         x: {
           grid: {
             color: "rgba(255, 255, 255, 0.1)",
+          },
+          ticks: {
+            color: "rgba(255, 255, 255, 0.7)",
           },
         },
         y: {
@@ -164,6 +216,7 @@ function createChart(canvas, data, label) {
             color: "rgba(255, 255, 255, 0.1)",
           },
           ticks: {
+            color: "rgba(255, 255, 255, 0.7)",
             callback: (value) => `$${value}`,
           },
         },
@@ -197,22 +250,38 @@ function updateCharts() {
   }
 
   // Создаем новые графики
-  if (mockChartRef.value && store.mockData.length) {
-    mockChart = createChart(
-      mockChartRef.value,
-      store.mockData,
-      "BTC/USDT (Mock)"
-    );
-  }
+  setTimeout(() => {
+    if (mockChartRef.value && filteredData.value.length) {
+      mockChart = createChart(
+        mockChartRef.value,
+        filteredData.value,
+        "BTC/USDT (Mock)"
+      );
+    }
 
-  if (coindeskChartRef.value && store.coindeskData.length) {
-    coindeskChart = createChart(
-      coindeskChartRef.value,
-      store.coindeskData,
-      "BTC/USD (Coindesk)"
-    );
-  }
+    if (coindeskChartRef.value && store.coindeskData.length) {
+      coindeskChart = createChart(
+        coindeskChartRef.value,
+        store.coindeskData,
+        "BTC/USD (Coindesk)"
+      );
+    }
+  }, 0);
 }
+
+// Наблюдаем за изменением выбранного периода
+watch(selectedPeriod, () => {
+  updateCharts();
+});
+
+// Наблюдаем за изменением данных
+watch(
+  () => store.mockData,
+  () => {
+    updateCharts();
+  },
+  { deep: true }
+);
 
 // Инициализация при монтировании
 onMounted(() => {
@@ -286,6 +355,25 @@ canvas {
 
 .chart-header h3 {
   margin: 0;
+}
+
+.timeframe-selector {
+  display: flex;
+  gap: 5px;
+}
+
+.timeframe-selector button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.timeframe-selector button.active {
+  background: #02c076;
 }
 
 .chart-placeholder {
