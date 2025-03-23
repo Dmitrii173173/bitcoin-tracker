@@ -11,14 +11,14 @@
                 v-for="period in timeframes"
                 :key="period.value"
                 :class="{ active: selectedPeriod === period.value }"
-                @click="selectedPeriod = period.value"
+                @click="changePeriod(period.value)"
               >
                 {{ period.label }}
               </button>
             </div>
           </div>
           <ClientOnly>
-            <canvas v-if="filteredData.length" ref="mockChartRef"></canvas>
+            <canvas v-if="store.mockData.length" ref="mockChartRef"></canvas>
             <div v-else class="chart-placeholder">
               <p>Нет данных для отображения</p>
             </div>
@@ -39,7 +39,10 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in filteredData" :key="index">
+              <tr
+                v-for="(item, index) in store.mockData.slice(0, 10)"
+                :key="index"
+              >
                 <td>{{ new Date(item.date).toLocaleString() }}</td>
                 <td :class="getColorClass(item.open, item.close)">
                   ${{ item.open.toFixed(2) }}
@@ -65,7 +68,20 @@
       <h2 class="section-title">Coindesk Data</h2>
       <div class="content-wrapper">
         <div class="chart-container">
-          <div class="chart-header"><h3>BTC/USD (Coindesk)</h3></div>
+          <div class="chart-header">
+            <h3>BTC/USD (Coindesk)</h3>
+            <div v-if="store.coindeskCurrentData" class="current-price">
+              Текущая цена:
+              <span class="price-value"
+                >${{ store.coindeskCurrentData.price.toFixed(2) }}</span
+              >
+              <span class="updated-time">{{
+                new Date(
+                  store.coindeskCurrentData.updatedTime
+                ).toLocaleTimeString()
+              }}</span>
+            </div>
+          </div>
           <ClientOnly>
             <canvas
               v-if="store.coindeskData.length"
@@ -90,7 +106,10 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in store.coindeskData" :key="index">
+              <tr
+                v-for="(item, index) in store.coindeskData.slice(0, 10)"
+                :key="index"
+              >
                 <td>{{ new Date(item.date).toLocaleString() }}</td>
                 <td :class="getColorClass(item.open, item.close)">
                   ${{ item.open.toFixed(2) }}
@@ -131,12 +150,6 @@ const timeframes = [
   { label: "Месяц", value: "month" },
   { label: "Год", value: "year" },
 ];
-
-// Фильтрация данных по периоду
-const filteredData = computed(() => {
-  if (!store.mockData.length) return [];
-  return store.mockData.filter((item) => item.period === selectedPeriod.value);
-});
 
 // Ссылки на графики
 const mockChartRef = ref(null);
@@ -225,6 +238,13 @@ function createChart(canvas, data, label) {
   });
 }
 
+// Изменение периода
+async function changePeriod(period) {
+  selectedPeriod.value = period;
+  await store.fetchHistoricalByPeriod(period);
+  updateCharts();
+}
+
 // Обновление данных
 function refreshMockData() {
   store.generateMockData();
@@ -251,10 +271,10 @@ function updateCharts() {
 
   // Создаем новые графики
   setTimeout(() => {
-    if (mockChartRef.value && filteredData.value.length) {
+    if (mockChartRef.value && store.mockData.length) {
       mockChart = createChart(
         mockChartRef.value,
-        filteredData.value,
+        store.mockData,
         "BTC/USDT (Mock)"
       );
     }
@@ -268,20 +288,6 @@ function updateCharts() {
     }
   }, 0);
 }
-
-// Наблюдаем за изменением выбранного периода
-watch(selectedPeriod, () => {
-  updateCharts();
-});
-
-// Наблюдаем за изменением данных
-watch(
-  () => store.mockData,
-  () => {
-    updateCharts();
-  },
-  { deep: true }
-);
 
 // Инициализация при монтировании
 onMounted(() => {
@@ -355,6 +361,22 @@ canvas {
 
 .chart-header h3 {
   margin: 0;
+}
+
+.current-price {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.price-value {
+  font-weight: bold;
+  color: #02c076;
+  margin-right: 8px;
+}
+
+.updated-time {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .timeframe-selector {
