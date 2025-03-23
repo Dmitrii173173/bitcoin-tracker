@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+import { defineStore, acceptHMRUpdate } from 'pinia'
 import { pinia } from '~/composables/usePinia'
 
 interface CoindeskState {
@@ -68,6 +68,7 @@ export const useCoindeskStore = defineStore<'coindesk', CoindeskState>('coindesk
   }
 })
 
+// Поддержка HMR для TypeScript
 if (import.meta.hot) {
   import.meta.hot.accept(acceptHMRUpdate(useCoindeskStore, import.meta.hot))
 }
