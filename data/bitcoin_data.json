@@ -1,242 +1,48 @@
-[
+using System;
+using System.IO;
+using System.Text.Json;
+using System.Collections.Generic;
+
+public class BitcoinData
+{
+    public string Date { get; set; }
+    public double Open { get; set; }
+    public double Close { get; set; }
+    public double High { get; set; }
+    public double Low { get; set; }
+    public double Volume { get; set; }
+}
+
+public class DataLoader
+{
+    public static List<BitcoinData> LoadBitcoinData(string filePath)
     {
-        "date": "2025-02-20",
-        "open": 30149.2,
-        "close": 28568.72,
-        "high": 31010.27,
-        "low": 27905.33,
-        "volume": 1744.95
-    },
-    {
-        "date": "2025-02-21",
-        "open": 44824.49,
-        "close": 46378.91,
-        "high": 47089.52,
-        "low": 44775.58,
-        "volume": 3165.6
-    },
-    {
-        "date": "2025-02-22",
-        "open": 44366.95,
-        "close": 43123.21,
-        "high": 44435.53,
-        "low": 42418.38,
-        "volume": 1654.5
-    },
-    {
-        "date": "2025-02-23",
-        "open": 41208.72,
-        "close": 40813.05,
-        "high": 41927.78,
-        "low": 40319.38,
-        "volume": 2514.8
-    },
-    {
-        "date": "2025-02-24",
-        "open": 37046.99,
-        "close": 35464.42,
-        "high": 37545.35,
-        "low": 34919.61,
-        "volume": 4436.63
-    },
-    {
-        "date": "2025-02-25",
-        "open": 44829.42,
-        "close": 43696.5,
-        "high": 45224.93,
-        "low": 43094.52,
-        "volume": 2720.58
-    },
-    {
-        "date": "2025-02-26",
-        "open": 36142.44,
-        "close": 35563.78,
-        "high": 37016.73,
-        "low": 35195.96,
-        "volume": 801.86
-    },
-    {
-        "date": "2025-02-27",
-        "open": 49954.09,
-        "close": 48288.36,
-        "high": 50602.26,
-        "low": 47614.14,
-        "volume": 2105.85
-    },
-    {
-        "date": "2025-02-28",
-        "open": 41696.41,
-        "close": 43696.38,
-        "high": 43933.01,
-        "low": 41142.6,
-        "volume": 563.64
-    },
-    {
-        "date": "2025-03-01",
-        "open": 40684.77,
-        "close": 41917.27,
-        "high": 42857.03,
-        "low": 40451.03,
-        "volume": 2154.67
-    },
-    {
-        "date": "2025-03-02",
-        "open": 45254.16,
-        "close": 46372.56,
-        "high": 46397.5,
-        "low": 44496.02,
-        "volume": 2209.19
-    },
-    {
-        "date": "2025-03-03",
-        "open": 34233.66,
-        "close": 33603.46,
-        "high": 35069.6,
-        "low": 32665.55,
-        "volume": 2924.91
-    },
-    {
-        "date": "2025-03-04",
-        "open": 48100.63,
-        "close": 48285.71,
-        "high": 48616.5,
-        "low": 47731.91,
-        "volume": 4271.82
-    },
-    {
-        "date": "2025-03-05",
-        "open": 36302.57,
-        "close": 37610.21,
-        "high": 38224.72,
-        "low": 35569.29,
-        "volume": 2848.28
-    },
-    {
-        "date": "2025-03-06",
-        "open": 43941.89,
-        "close": 43112.01,
-        "high": 44238.08,
-        "low": 42441.55,
-        "volume": 1577.41
-    },
-    {
-        "date": "2025-03-07",
-        "open": 49900.42,
-        "close": 50401.09,
-        "high": 50651.8,
-        "low": 49582.65,
-        "volume": 4439.25
-    },
-    {
-        "date": "2025-03-08",
-        "open": 36440.01,
-        "close": 37729.01,
-        "high": 38345.31,
-        "low": 35578.61,
-        "volume": 3249.78
-    },
-    {
-        "date": "2025-03-09",
-        "open": 36587.23,
-        "close": 37386.44,
-        "high": 37572.06,
-        "low": 35966.93,
-        "volume": 4766.93
-    },
-    {
-        "date": "2025-03-10",
-        "open": 34598.53,
-        "close": 33561.89,
-        "high": 35439.0,
-        "low": 32767.26,
-        "volume": 665.64
-    },
-    {
-        "date": "2025-03-11",
-        "open": 36411.95,
-        "close": 35668.22,
-        "high": 36724.99,
-        "low": 34926.45,
-        "volume": 4461.24
-    },
-    {
-        "date": "2025-03-12",
-        "open": 43657.38,
-        "close": 44337.56,
-        "high": 44463.63,
-        "low": 43231.8,
-        "volume": 1958.4
-    },
-    {
-        "date": "2025-03-13",
-        "open": 43665.67,
-        "close": 44005.46,
-        "high": 44892.12,
-        "low": 43154.83,
-        "volume": 1943.77
-    },
-    {
-        "date": "2025-03-14",
-        "open": 45131.65,
-        "close": 46605.85,
-        "high": 47455.3,
-        "low": 44856.93,
-        "volume": 3427.62
-    },
-    {
-        "date": "2025-03-15",
-        "open": 42703.71,
-        "close": 42115.69,
-        "high": 43400.88,
-        "low": 41337.19,
-        "volume": 2558.69
-    },
-    {
-        "date": "2025-03-16",
-        "open": 45147.48,
-        "close": 46247.75,
-        "high": 47072.33,
-        "low": 44250.82,
-        "volume": 1455.72
-    },
-    {
-        "date": "2025-03-17",
-        "open": 36998.06,
-        "close": 38356.34,
-        "high": 38825.58,
-        "low": 36173.2,
-        "volume": 537.68
-    },
-    {
-        "date": "2025-03-18",
-        "open": 34937.2,
-        "close": 35375.35,
-        "high": 35685.09,
-        "low": 34366.16,
-        "volume": 3473.29
-    },
-    {
-        "date": "2025-03-19",
-        "open": 32376.24,
-        "close": 33143.28,
-        "high": 33663.57,
-        "low": 31912.13,
-        "volume": 3635.82
-    },
-    {
-        "date": "2025-03-20",
-        "open": 32789.9,
-        "close": 31058.59,
-        "high": 32964.87,
-        "low": 30245.99,
-        "volume": 4516.49
-    },
-    {
-        "date": "2025-03-21",
-        "open": 38730.55,
-        "close": 37818.26,
-        "high": 39133.19,
-        "low": 37109.28,
-        "volume": 1186.1
+        try
+        {
+            string jsonString = File.ReadAllText(filePath);
+            return JsonSerializer.Deserialize<List<BitcoinData>>(jsonString);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка при чтении файла: {ex.Message}");
+            return new List<BitcoinData>();
+        }
     }
-]
+
+    public static void Main()
+    {
+        string dataPath = @"D:\A1\bitcoin-tracker\data\bitcoin_data.json";
+        var data = LoadBitcoinData(dataPath);
+        
+        if (data.Count > 0)
+        {
+            Console.WriteLine($"Загружено {data.Count} записей");
+            Console.WriteLine($"Первая запись: Дата: {data[0].Date}, Цена закрытия: {data[0].Close}");
+            Console.WriteLine($"Последняя запись: Дата: {data[data.Count-1].Date}, Цена закрытия: {data[data.Count-1].Close}");
+        }
+        else
+        {
+            Console.WriteLine("Данные не загружены");
+        }
+    }
+}
