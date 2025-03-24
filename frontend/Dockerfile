@@ -21,7 +21,8 @@ RUN echo "==== Before build ====" && ls -la
 
 # Создаем директорию для данных
 RUN mkdir -p public/data
-COPY data/* public/data/ || true
+# Используем команду shell вместо COPY для безопасного копирования
+RUN if [ -d "data" ]; then cp -r data/* public/data/ 2>/dev/null || true; fi
 
 # Генерируем статический сайт
 RUN npm run generate
