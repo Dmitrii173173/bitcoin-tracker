@@ -19,32 +19,44 @@ COPY . .
 # Выводим информацию о структуре проекта перед сборкой
 RUN echo "==== Before build ====" && ls -la
 
-# Собираем приложение
-RUN npm run build
+# Создаем директорию для данных
+RUN mkdir -p public/data
+COPY data/* public/data/ || true
+
+# Генерируем статический сайт вместо серверного приложения
+RUN npm run generate
 
 # Проверяем, где созданы файлы сборки
 RUN echo "==== After build ====" && ls -la && \
     echo "==== Dist folder ====" && ls -la dist || echo "No dist folder" && \
     echo "==== .output folder ====" && ls -la .output || echo "No .output folder"
 
-# Запускаем на отдельном образе
-FROM node:18-alpine AS runner
+# Используем nginx для раздачи статических файлов
+FROM nginx:alpine
 
-# Устанавливаем рабочую директорию
-WORKDIR /app
+# Копируем статические файлы из этапа сборки
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Устанавливаем переменные окружения
-ENV NODE_ENV=production
-
-# Копируем собранное приложение из предыдущего образа
-COPY --from=builder /app/.output ./.output
-COPY --from=builder /app/package.json ./
-
-# Устанавливаем только production зависимости
-RUN npm install --omit=dev
+# Создаем конфигурацию nginx для SPA
+RUN echo 'server { \
+    listen       80; \
+    server_name  localhost; \
+    location / { \
+        root   /usr/share/nginx/html; \
+        index  index.html; \
+        try_files $uri $uri/ /index.html; \
+    } \
+    location /api/ { \
+        proxy_pass http://backend:3001; \
+        proxy_http_version 1.1; \
+        proxy_set_header Upgrade $http_upgrade; \
+        proxy_set_header Connection "upgrade"; \
+        proxy_set_header Host $host; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
 
 # Открываем порт
-EXPOSE 3000
+EXPOSE 80
 
-# Запускаем приложение
-CMD ["node", ".output/server/index.mjs"]
+# Запускаем nginx
+CMD ["nginx", "-g", "daemon off;"]

@@ -1,62 +1,64 @@
 version: '3.8'
 services:
+  # Фронтенд - статический сайт с Nginx
   frontend:
     build: 
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "${PORT:-3000}:3000"
-    environment:
-      - BACKEND_URL=http://backend:3001
-      - NODE_ENV=production
-      - NUXT_HOST=0.0.0.0
-      - NUXT_PORT=3000
+      - "${PORT:-80}:80"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
+    networks:
+      - app-network
 
+  # Бэкенд - API сервер на Express
   backend:
     build: 
       context: ./backend
       dockerfile: Dockerfile
-    expose:
-      - "3001"
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
     environment:
       - PORT=3001
-      - DATABASE_URL=postgresql://user:password@db:5432/bitcoin_tracker
+      - DATABASE_URL=postgresql://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-bitcoin_tracker}
       - NODE_ENV=production
     depends_on:
-      db:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - db
+    networks:
+      - app-network
 
+  # Коллектор данных - периодически получает данные из API
   collector:
     build: 
       context: ./collector
       dockerfile: Dockerfile
     environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/bitcoin_tracker
+      - DATABASE_URL=postgresql://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-bitcoin_tracker}
       - NODE_ENV=production
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     restart: always
+    networks:
+      - app-network
 
+  # База данных PostgreSQL
   db:
     image: postgres:14
+    ports:
+      - "${DB_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: ${DB_USER:-user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
       POSTGRES_DB: ${DB_NAME:-bitcoin_tracker}
-    expose:
-      - "5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
