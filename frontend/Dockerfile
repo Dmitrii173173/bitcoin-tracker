@@ -7,11 +7,17 @@ WORKDIR /app
 # Копируем файлы package.json и package-lock.json
 COPY package*.json ./
 
+# Проверяем содержимое package.json
+RUN cat package.json
+
 # Устанавливаем зависимости
 RUN npm install
 
 # Устанавливаем типы для Node.js
 RUN npm install --save-dev @types/node
+
+# Выводим доступные скрипты
+RUN npm run
 
 # Копируем остальные файлы проекта
 COPY . .
@@ -24,8 +30,8 @@ RUN mkdir -p public/data
 # Используем команду shell вместо COPY для безопасного копирования
 RUN if [ -d "data" ]; then cp -r data/* public/data/ 2>/dev/null || true; fi
 
-# Генерируем статический сайт
-RUN npm run generate
+# Собираем приложение
+RUN npm run build
 
 # Проверяем, где созданы файлы сборки
 RUN echo "==== After build ====" && ls -la && \
@@ -46,12 +52,28 @@ app.use("/api", createProxyMiddleware({ \
   pathRewrite: { "^/api": "/api" } \
 })); \
 \
+// Определяем путь к статическим файлам в зависимости от структуры сборки \
+let staticPath = "dist"; \
+if (!require("fs").existsSync(path.join(__dirname, "dist"))) { \
+  if (require("fs").existsSync(path.join(__dirname, ".output", "public"))) { \
+    staticPath = ".output/public"; \
+  } else if (require("fs").existsSync(path.join(__dirname, ".output"))) { \
+    staticPath = ".output"; \
+  } \
+} \
+console.log(`Используем путь к статическим файлам: ${staticPath}`); \
+\
 // Раздаем статические файлы \
-app.use(express.static(path.join(__dirname, "dist"))); \
+app.use(express.static(path.join(__dirname, staticPath))); \
 \
 // Для SPA - все остальные запросы направляем на index.html \
 app.get("*", (req, res) => { \
-  res.sendFile(path.join(__dirname, "dist", "index.html")); \
+  const indexPath = path.join(__dirname, staticPath, "index.html"); \
+  if (require("fs").existsSync(indexPath)) { \
+    res.sendFile(indexPath); \
+  } else { \
+    res.status(404).send("Файл index.html не найден"); \
+  } \
 }); \
 \
 // Запускаем сервер \
@@ -73,8 +95,9 @@ ENV NODE_ENV=production
 ENV PORT=80
 ENV BACKEND_URL=http://backend:3001
 
-# Копируем статические файлы из builder
-COPY --from=builder /app/dist ./dist
+# Копируем файлы из builder
+COPY --from=builder /app/.output ./.output
+COPY --from=builder /app/dist ./dist || true
 COPY --from=builder /app/server.js ./server.js
 COPY --from=builder /app/package.json ./package.json
 
