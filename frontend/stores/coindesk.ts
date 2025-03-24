@@ -1,5 +1,4 @@
-import { defineStore, acceptHMRUpdate } from 'pinia'
-import { pinia } from '~/composables/usePinia'
+import { defineStore } from 'pinia'
 
 interface CoindeskState {
   priceHistory: Array<{ timestamp: Date; price: number }>;
@@ -10,9 +9,9 @@ interface CoindeskState {
   change: string;
 }
 
-export const useCoindeskStore = defineStore<'coindesk', CoindeskState>('coindesk', {
-  state: () => ({
-    priceHistory: [] as Array<{timestamp: Date; price: number}>,
+export const useCoindeskStore = defineStore('coindesk', {
+  state: (): CoindeskState => ({
+    priceHistory: [],
     currentPrice: 0,
     high: 0,
     low: 0,
@@ -66,11 +65,4 @@ export const useCoindeskStore = defineStore<'coindesk', CoindeskState>('coindesk
       }
     }
   }
-})
-
-// Поддержка HMR для TypeScript
-if (import.meta.hot) {
-  import.meta.hot.accept(acceptHMRUpdate(useCoindeskStore, import.meta.hot))
-}
-
-export const coindeskStore = useCoindeskStore(pinia) 
+}) 
