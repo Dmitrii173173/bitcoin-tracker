@@ -25,7 +25,7 @@ RUN echo "=== Содержимое директории перед сборко�
     cat package.json
 
 # Собираем приложение
-RUN npm run build
+RUN npm run build || (echo "Ошибка сборки" && exit 1)
 
 # Создаем резервный server.js
 RUN echo 'const express = require("express"); \
@@ -106,10 +106,15 @@ WORKDIR /app
 
 # Копируем только необходимые файлы из этапа сборки
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/.output ./.output || true
-COPY --from=builder /app/dist ./dist || true
-COPY --from=builder /app/data ./data || true
 COPY --from=builder /app/server.js ./
+
+# Создаем необходимые директории
+RUN mkdir -p .output dist data
+
+# Копируем файлы сборки, если они существуют
+COPY --from=builder /app/.output/ ./.output/ 2>/dev/null || true
+COPY --from=builder /app/dist/ ./dist/ 2>/dev/null || true
+COPY --from=builder /app/data/ ./data/ 2>/dev/null || true
 
 # Устанавливаем только production зависимости
 RUN npm ci --only=production
