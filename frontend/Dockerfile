@@ -97,7 +97,8 @@ ENV BACKEND_URL=http://backend:3001
 
 # Копируем файлы из builder
 COPY --from=builder /app/.output ./.output
-COPY --from=builder /app/dist ./dist || true
+# Используем команду shell вместо проблемного COPY
+RUN mkdir -p dist && if [ -d "/app/dist" ]; then cp -r /app/dist/* dist/ 2>/dev/null || true; fi
 COPY --from=builder /app/server.js ./server.js
 COPY --from=builder /app/package.json ./package.json
 
