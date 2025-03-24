@@ -1,53 +1,101 @@
-const express = require('express');
-const path = require('path');
+/*
+  Этот файл служит резервным решением для Railway,
+  если не найден .output/server/index.mjs
+*/
+const { execSync, spawn } = require('child_process');
 const fs = require('fs');
-const { createProxyMiddleware } = require('http-proxy-middleware');
-const app = express();
+const path = require('path');
+
 const PORT = process.env.PORT || 80;
 
-// Настройка прокси для API запросов
-app.use('/api', createProxyMiddleware({
-  target: process.env.BACKEND_URL || 'http://backend:3001',
-  changeOrigin: true,
-  pathRewrite: { '^/api': '/api' }
-}));
+console.log('Проверка файловой структуры...');
+console.log('Текущая директория:', process.cwd());
+console.log('Содержимое директории:', fs.readdirSync('.'));
 
-// Ищем папку со статическими файлами
-const paths = [
-  { path: path.join(__dirname, 'dist'), exists: false },
-  { path: path.join(__dirname, '.output', 'public'), exists: false },
-  { path: path.join(__dirname, '.output'), exists: false },
-  { path: path.join(__dirname, '.nuxt', 'dist', 'client'), exists: false }
-];
+// Проверяем пути к возможным серверным файлам
+const outputPath = path.join('.output', 'server', 'index.mjs');
+const distPath = path.join('dist', 'server', 'index.mjs');
+const nuxtDevPath = path.join('.nuxt', 'dev', 'index.mjs');
 
-// Проверяем существование каждого пути
-paths.forEach(item => {
-  item.exists = fs.existsSync(item.path);
-  console.log(`Путь ${item.path} существует: ${item.exists}`);
-});
-
-// Находим первый существующий путь
-const staticPath = paths.find(item => item.exists);
-
-if (staticPath) {
-  console.log(`Используем путь для статических файлов: ${staticPath.path}`);
-  app.use(express.static(staticPath.path));
-  
-  // Для SPA - все остальные запросы направляем на index.html, если он существует
-  const indexPath = path.join(staticPath.path, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    app.get('*', (req, res) => {
-      res.sendFile(indexPath);
-    });
-  }
-} else {
-  console.error('ОШИБКА: Не найдены папки со статическими файлами');
-  app.get('*', (req, res) => {
-    res.status(500).send('Ошибка конфигурации: Не найдены папки со статическими файлами');
+if (fs.existsSync(outputPath)) {
+  console.log(`Найден файл: ${outputPath}`);
+  // Запускаем как отдельный процесс
+  const proc = spawn('node', [outputPath], { stdio: 'inherit' });
+  proc.on('error', (err) => {
+    console.error('Ошибка при запуске сервера:', err);
+    process.exit(1);
   });
-}
-
-// Запускаем сервер
-app.listen(PORT, () => {
-  console.log(`Фронтенд сервер запущен на порту ${PORT}`);
-}); 
+} else if (fs.existsSync(distPath)) {
+  console.log(`Найден файл: ${distPath}`);
+  const proc = spawn('node', [distPath], { stdio: 'inherit' });
+  proc.on('error', (err) => {
+    console.error('Ошибка при запуске сервера:', err);
+    process.exit(1);
+  });
+} else if (fs.existsSync(nuxtDevPath)) {
+  console.log(`Найден файл: ${nuxtDevPath}`);
+  const proc = spawn('node', [nuxtDevPath], { stdio: 'inherit' });
+  proc.on('error', (err) => {
+    console.error('Ошибка при запуске сервера:', err);
+    process.exit(1);
+  });
+} else {
+  console.log('Файлы сервера не найдены, создаем простой Express-сервер');
+  
+  try {
+    // Необходимо установить express и http-proxy-middleware
+    if (!fs.existsSync('./node_modules/express')) {
+      console.log('Устанавливаем express...');
+      execSync('npm install express http-proxy-middleware', { stdio: 'inherit' });
+    }
+    
+    const express = require('express');
+    const { createProxyMiddleware } = require('http-proxy-middleware');
+    const app = express();
+    
+    // Настройка прокси для API запросов
+    app.use('/api', createProxyMiddleware({
+      target: process.env.BACKEND_URL || 'http://backend:3001',
+      changeOrigin: true,
+      pathRewrite: { '^/api': '/api' }
+    }));
+    
+    // Ищем папку со статическими файлами
+    let staticFolder = null;
+    
+    if (fs.existsSync('.output/public')) {
+      staticFolder = '.output/public';
+    } else if (fs.existsSync('dist')) {
+      staticFolder = 'dist';
+    } else if (fs.existsSync('.nuxt/dist/client')) {
+      staticFolder = '.nuxt/dist/client';
+    }
+    
+    if (staticFolder) {
+      console.log(`Используем папку для статических файлов: ${staticFolder}`);
+      app.use(express.static(staticFolder));
+      
+      // Для SPA маршрутизации
+      app.get('*', (req, res) => {
+        const indexPath = path.join(staticFolder, 'index.html');
+        if (fs.existsSync(indexPath)) {
+          res.sendFile(path.resolve(indexPath));
+        } else {
+          res.status(404).send('index.html не найден');
+        }
+      });
+    } else {
+      console.log('Не найдены папки со статическими файлами');
+      app.get('*', (req, res) => {
+        res.status(500).send('Не найдены папки со статическими файлами');
+      });
+    }
+    
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Резервный сервер запущен на порту ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Ошибка при создании резервного сервера:', error);
+    process.exit(1);
+  }
+} 

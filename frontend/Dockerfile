@@ -21,24 +21,27 @@ RUN if [ -d "data" ] && [ "$(ls -A data 2>/dev/null)" ]; then \
       cp -r data/* public/data/; \
     fi
 
-# Собираем приложение с Nuxt
+# Детальное логирование процесса сборки
+RUN echo "=== Содержимое директории перед сборкой ===" && ls -la && \
+    echo "=== Проверяем файл package.json ===" && cat package.json
+
+# Собираем приложение с помощью Nuxt
 RUN npm run build
 
-# Отображаем структуру файлов после сборки
-RUN echo "==== После сборки ====" && \
-    ls -la && \
-    echo "==== Содержимое папки .output ====" && \
-    ls -la .output || echo "Папка .output не найдена" && \
-    echo "==== Содержимое папки .output/server ====" && \
-    ls -la .output/server || echo "Папка .output/server не найдена"
+# Очень подробная диагностика после сборки
+RUN echo "=== Содержимое корневой директории после сборки ===" && ls -la && \
+    echo "=== Содержимое папки .nuxt ===" && ls -la .nuxt || echo "Папка .nuxt не найдена" && \
+    echo "=== Содержимое папки .output ===" && ls -la .output || echo "Папка .output не найдена" && \
+    find . -type d -name "server" | xargs ls -la || echo "Не найдены папки server"
 
 # Устанавливаем переменные окружения
 ENV NODE_ENV=production
 ENV PORT=80
 ENV BACKEND_URL=http://backend:3001
+ENV HOST=0.0.0.0
 
 # Открываем порт
 EXPOSE 80
 
-# Запускаем сервер Nuxt
-CMD ["node", ".output/server/index.mjs"]
+# Запускаем резервный server.js, который проверит наличие .output/server/index.mjs
+CMD ["node", "server.js"]

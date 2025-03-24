@@ -1,7 +1,7 @@
 {
   "name": "bitcoin-tracker-frontend",
   "private": true,
-  "type": "module",
+  "version": "1.0.0",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -10,16 +10,16 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@nuxtjs/tailwindcss": "^6.11.4",
+    "nuxt": "^3.16.1",
     "pinia": "^2.1.7",
-    "@pinia/nuxt": "^0.5.1",
-    "chart.js": "^4.3.0",
-    "chartjs-adapter-date-fns": "^3.0.0",
-    "date-fns": "^2.30.0"
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0"
   },
   "devDependencies": {
-    "@types/node": "^18",
-    "nuxt": "^3.16.1",
-    "typescript": "^5.0.0"
+    "@nuxt/devtools": "latest",
+    "@types/node": "^20.11.25",
+    "typescript": "^5.4.2"
   },
   "resolutions": {
     "vue": "^3.3.0"
