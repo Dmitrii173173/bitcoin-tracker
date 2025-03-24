@@ -31,7 +31,19 @@ export default defineNuxtConfig({
     typeCheck: false
   },
   nitro: {
-    preset: 'node-server'
+    preset: 'node-server',
+    // Настройка проксирования для API
+    devProxy: {
+      '/api': {
+        target: process.env.BACKEND_URL || 'http://localhost:3001',
+        changeOrigin: true
+      }
+    },
+    routeRules: {
+      '/api/**': {
+        proxy: process.env.BACKEND_URL || 'http://localhost:3001'
+      }
+    }
   },
   // Отключаем автоматические импорты
   imports: {
@@ -44,6 +56,15 @@ export default defineNuxtConfig({
     },
     optimizeDeps: {
       include: ['pinia']
+    },
+    // Настройка прокси Vite
+    server: {
+      proxy: {
+        '/api': {
+          target: process.env.BACKEND_URL || 'http://localhost:3001',
+          changeOrigin: true
+        }
+      }
     }
   },
   // Отключаем экспериментальные функции
@@ -54,5 +75,9 @@ export default defineNuxtConfig({
   },
   compatibility: {
     date: '2025-03-22'
+  },
+  // Дополнительные девелоперские настройки
+  devtools: {
+    enabled: true
   }
 })
