@@ -16,23 +16,28 @@ RUN npm install --save-dev @types/node
 # Копируем остальные файлы проекта
 COPY . .
 
-# Собираем приложение
-RUN npm run build
+# Выводим информацию о структуре проекта перед сборкой
+RUN echo "==== Before build ====" && ls -la
 
-# Запускаем на отдельном образе
-FROM node:18-alpine AS runner
+# Генерируем статические файлы (хорошо работает в SSR=false)
+RUN npm run generate
 
-# Устанавливаем рабочую директорию
-WORKDIR /app
+# Проверяем, где созданы файлы сборки
+RUN echo "==== After generate ====" && ls -la && \
+    echo "==== Dist folder ====" && ls -la dist || echo "No dist folder" && \
+    echo "==== .output folder ====" && ls -la .output || echo "No .output folder"
 
-# Устанавливаем переменные окружения
-ENV NODE_ENV=production
+# Запускаем на отдельном образе - используем nginx для раздачи статических файлов
+FROM nginx:alpine AS runner
 
-# Копируем собранное приложение из предыдущего образа
-COPY --from=builder /app/.output ./
+# Копируем статические файлы из предыдущего образа
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Копируем nginx конфигурацию для работы с SPA
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Открываем порт
-EXPOSE 3000
+EXPOSE 80
 
-# Запускаем приложение
-CMD ["node", "server/index.mjs"]
+# Запускаем nginx
+CMD ["nginx", "-g", "daemon off;"]
