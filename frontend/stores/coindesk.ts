@@ -10,8 +10,8 @@ interface CoindeskState {
 }
 
 export const useCoindeskStore = defineStore('coindesk', {
-  state: (): CoindeskState => ({
-    priceHistory: [],
+  state: () => ({
+    priceHistory: [] as Array<{timestamp: Date; price: number}>,
     currentPrice: 0,
     high: 0,
     low: 0,
@@ -38,7 +38,7 @@ export const useCoindeskStore = defineStore('coindesk', {
         }
 
         const now = new Date()
-        const newHistory = []
+        const newHistory: Array<{timestamp: Date; price: number}> = []
         let lastPrice = this.currentPrice
 
         for (let i = points; i >= 0; i--) {
