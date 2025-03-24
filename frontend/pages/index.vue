@@ -1,19 +1,18 @@
 <template>
   <div class="container">
-    <!-- Блок с данными из API/JSON -->
     <div class="section">
-      <h2 class="section-title">Bitcoin Data</h2>
+      <h2 class="section-title">Bitcoin Price (Binance)</h2>
 
       <!-- Индикатор загрузки -->
-      <div v-if="store.loading" class="loading-container">
+      <div v-if="loading" class="loading-container">
         <div class="loading-spinner"></div>
         <p>Загрузка данных...</p>
       </div>
 
       <!-- Индикатор ошибок -->
-      <div v-else-if="store.error" class="error-container">
-        <p>Ошибка: {{ store.error }}</p>
-        <button @click="refreshData" class="refresh-button">
+      <div v-else-if="error" class="error-container">
+        <p>Ошибка: {{ error }}</p>
+        <button @click="fetchData" class="refresh-button">
           Попробовать снова
         </button>
       </div>
@@ -22,23 +21,11 @@
       <div v-else class="content-wrapper">
         <!-- График цены Bitcoin -->
         <div class="chart-container">
-          <div class="chart-header">
-            <h3>BTC Price</h3>
-            <div class="timeframe-selector">
-              <button
-                v-for="period in timeframes"
-                :key="period.value"
-                :class="{ active: selectedPeriod === period.value }"
-                @click="changePeriod(period.value)"
-              >
-                {{ period.label }}
-              </button>
-            </div>
-          </div>
+          <div class="chart-header"><h3>BTC/USDT Price</h3></div>
 
           <!-- График -->
           <ClientOnly>
-            <canvas v-if="store.mockData.length" ref="chartRef"></canvas>
+            <canvas v-if="priceData.length" ref="chartRef"></canvas>
             <div v-else class="chart-placeholder">
               <p>Нет данных для отображения</p>
             </div>
@@ -47,41 +34,24 @@
 
         <!-- Таблица данных -->
         <div class="data-table">
-          <h3>Price Data</h3>
+          <h3>Price History</h3>
           <table>
             <thead>
               <tr>
-                <th>Дата</th>
-                <th>Открытие</th>
-                <th>Максимум</th>
-                <th>Минимум</th>
-                <th>Закрытие</th>
-                <th>Объем</th>
-                <th>Период</th>
+                <th>Время</th>
+                <th>Цена (USDT)</th>
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="(item, index) in filteredData.slice(0, 10)"
-                :key="index"
-              >
-                <td>{{ formatDate(item.date) }}</td>
-                <td :class="getColorClass(item.open, item.close)">
-                  ${{ formatPrice(item.open) }}
-                </td>
-                <td>${{ formatPrice(item.high) }}</td>
-                <td>${{ formatPrice(item.low) }}</td>
-                <td :class="getColorClass(item.close, item.open)">
-                  ${{ formatPrice(item.close) }}
-                </td>
-                <td>{{ formatVolume(item.volume) }}</td>
-                <td>{{ item.period }}</td>
+              <tr v-for="item in priceData.slice(0, 10)" :key="item.id">
+                <td>{{ formatDate(item.timestamp) }}</td>
+                <td>{{ formatPrice(item.price) }}</td>
               </tr>
             </tbody>
           </table>
 
           <!-- Кнопка обновления данных -->
-          <button @click="refreshData" class="refresh-button">
+          <button @click="fetchData" class="refresh-button">
             Обновить данные
           </button>
         </div>
@@ -91,42 +61,31 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from "vue";
-import { useMarketStore } from "~/stores/marketStore";
+import { ref, onMounted } from "vue";
 import Chart from "chart.js/auto";
 
-// Инициализация хранилища
-const store = useMarketStore();
-
-// Состояние для графика
+// Состояние
+const loading = ref(false);
+const error = ref(null);
+const priceData = ref([]);
 const chartRef = ref(null);
 let priceChart = null;
 
-// Выбранный период времени
-const selectedPeriod = ref("day");
-const timeframes = [
-  { label: "День", value: "day" },
-  { label: "Неделя", value: "week" },
-  { label: "Месяц", value: "month" },
-  { label: "Год", value: "year" },
-];
+// Получение данных
+async function fetchData() {
+  loading.value = true;
+  error.value = null;
 
-// Получение отфильтрованных данных на основе выбранного периода
-const filteredData = computed(() => {
-  return store.mockData.filter((item) => item.period === selectedPeriod.value);
-});
-
-// Обработчик изменения периода
-async function changePeriod(period) {
-  selectedPeriod.value = period;
-  await store.fetchHistoricalByPeriod(period);
-  recreateChart();
-}
-
-// Обновление данных
-async function refreshData() {
-  await store.generateMockData();
-  recreateChart();
+  try {
+    const response = await fetch("/api/prices");
+    if (!response.ok) throw new Error("Ошибка получения данных");
+    priceData.value = await response.json();
+    recreateChart();
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    loading.value = false;
+  }
 }
 
 // Создание/пересоздание графика
@@ -135,13 +94,13 @@ function recreateChart() {
     priceChart.destroy();
   }
 
-  if (!chartRef.value || filteredData.value.length === 0) return;
+  if (!chartRef.value || priceData.value.length === 0) return;
 
   const ctx = chartRef.value.getContext("2d");
 
   // Подготовка данных для графика
-  const labels = filteredData.value.map((item) => formatDate(item.date));
-  const prices = filteredData.value.map((item) => item.close);
+  const labels = priceData.value.map((item) => formatDate(item.timestamp));
+  const prices = priceData.value.map((item) => item.price);
 
   // Создание графика
   priceChart = new Chart(ctx, {
@@ -150,7 +109,7 @@ function recreateChart() {
       labels,
       datasets: [
         {
-          label: "Цена закрытия",
+          label: "BTC/USDT",
           data: prices,
           borderColor: "#3E98C7",
           backgroundColor: "rgba(62, 152, 199, 0.2)",
@@ -172,7 +131,7 @@ function recreateChart() {
           },
           ticks: {
             callback: function(value) {
-              return "$" + value.toLocaleString();
+              return value.toLocaleString() + " USDT";
             },
           },
         },
@@ -190,7 +149,7 @@ function recreateChart() {
         tooltip: {
           callbacks: {
             label: function(context) {
-              return "$" + context.raw.toLocaleString();
+              return context.raw.toLocaleString() + " USDT";
             },
           },
         },
@@ -201,30 +160,19 @@ function recreateChart() {
 
 // Хелперы форматирования
 function formatDate(date) {
-  return new Date(date).toLocaleDateString();
+  return new Date(date).toLocaleString();
 }
 
 function formatPrice(price) {
-  return price.toFixed(2);
-}
-
-function formatVolume(volume) {
-  return volume.toLocaleString();
-}
-
-function getColorClass(current, previous) {
-  if (current > previous) return "positive";
-  if (current < previous) return "negative";
-  return "";
+  return price.toLocaleString() + " USDT";
 }
 
 // Инициализация
-onMounted(async () => {
-  await refreshData();
+onMounted(() => {
+  fetchData();
+  // Обновляем данные каждую минуту
+  setInterval(fetchData, 60 * 1000);
 });
-
-// Отслеживание изменений данных
-watch(() => store.mockData, recreateChart, { deep: true });
 </script>
 
 <style scoped>
@@ -260,68 +208,68 @@ watch(() => store.mockData, recreateChart, { deep: true });
 }
 
 .chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 15px;
 }
 
-.timeframe-selector button {
-  background-color: #f5f7fa;
-  border: 1px solid #e3e8f0;
-  padding: 6px 12px;
-  margin-right: 5px;
+.chart-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #2d3748;
+}
+
+.chart-placeholder {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f7fafc;
   border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-
-.timeframe-selector button.active {
-  background-color: #3e98c7;
-  color: white;
-  border-color: #3e98c7;
-}
-
-.timeframe-selector button:hover {
-  background-color: #eaeef4;
-}
-
-.timeframe-selector button.active:hover {
-  background-color: #3589b7;
+  color: #718096;
 }
 
 .data-table {
   overflow-x: auto;
 }
 
-.data-table table {
+table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 15px;
 }
 
-.data-table th,
-.data-table td {
-  padding: 10px;
+th,
+td {
+  padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #e3e8f0;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.data-table th {
-  background-color: #f5f7fa;
+th {
+  background-color: #f7fafc;
   font-weight: 600;
+  color: #4a5568;
 }
 
-.data-table tbody tr:hover {
-  background-color: #f9fafc;
+.loading-container {
+  padding: 40px;
+  text-align: center;
+  color: #718096;
 }
 
-.positive {
-  color: #4caf50;
+.loading-spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3e98c7;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
 }
 
-.negative {
-  color: #f44336;
+.error-container {
+  padding: 20px;
+  text-align: center;
+  color: #e53e3e;
 }
 
 .refresh-button {
@@ -331,33 +279,12 @@ watch(() => store.mockData, recreateChart, { deep: true });
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  margin-top: 15px;
   font-size: 14px;
   transition: background-color 0.2s;
 }
 
 .refresh-button:hover {
-  background-color: #3589b7;
-}
-
-.loading-container,
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  text-align: center;
-}
-
-.loading-spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: #3e98c7;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 15px;
+  background-color: #2c7ab0;
 }
 
 @keyframes spin {
@@ -367,15 +294,5 @@ watch(() => store.mockData, recreateChart, { deep: true });
   100% {
     transform: rotate(360deg);
   }
-}
-
-.chart-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  background-color: #f9fafc;
-  border-radius: 8px;
-  color: #8795a9;
 }
 </style>
