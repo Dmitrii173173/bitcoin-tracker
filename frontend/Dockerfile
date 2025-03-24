@@ -19,25 +19,32 @@ COPY . .
 # Выводим информацию о структуре проекта перед сборкой
 RUN echo "==== Before build ====" && ls -la
 
-# Генерируем статические файлы (хорошо работает в SSR=false)
-RUN npm run generate
+# Собираем приложение
+RUN npm run build
 
 # Проверяем, где созданы файлы сборки
-RUN echo "==== After generate ====" && ls -la && \
+RUN echo "==== After build ====" && ls -la && \
     echo "==== Dist folder ====" && ls -la dist || echo "No dist folder" && \
     echo "==== .output folder ====" && ls -la .output || echo "No .output folder"
 
-# Запускаем на отдельном образе - используем nginx для раздачи статических файлов
-FROM nginx:alpine AS runner
+# Запускаем на отдельном образе
+FROM node:18-alpine AS runner
 
-# Копируем статические файлы из предыдущего образа
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Устанавливаем рабочую директорию
+WORKDIR /app
 
-# Копируем nginx конфигурацию для работы с SPA
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+# Устанавливаем переменные окружения
+ENV NODE_ENV=production
+
+# Копируем собранное приложение из предыдущего образа
+COPY --from=builder /app/.output ./.output
+COPY --from=builder /app/package.json ./
+
+# Устанавливаем только production зависимости
+RUN npm install --omit=dev
 
 # Открываем порт
-EXPOSE 80
+EXPOSE 3000
 
-# Запускаем nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Запускаем приложение
+CMD ["node", ".output/server/index.mjs"]

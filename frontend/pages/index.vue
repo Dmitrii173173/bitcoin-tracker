@@ -2,7 +2,17 @@
   <div class="container">
     <div class="section">
       <h2 class="section-title">Mock Data</h2>
-      <div class="content-wrapper">
+      <div v-if="store.loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Загрузка данных...</p>
+      </div>
+      <div v-else-if="store.error" class="error-container">
+        <p>Ошибка: {{ store.error }}</p>
+        <button @click="refreshMockData" class="refresh-button">
+          Попробовать снова
+        </button>
+      </div>
+      <div v-else class="content-wrapper">
         <div class="chart-container">
           <div class="chart-header">
             <h3>BTC/USDT (Mock)</h3>
@@ -66,7 +76,17 @@
 
     <div class="section">
       <h2 class="section-title">Coindesk Data</h2>
-      <div class="content-wrapper">
+      <div v-if="store.loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Загрузка данных...</p>
+      </div>
+      <div v-else-if="store.error" class="error-container">
+        <p>Ошибка: {{ store.error }}</p>
+        <button @click="refreshCoindeskData" class="refresh-button">
+          Попробовать снова
+        </button>
+      </div>
+      <div v-else class="content-wrapper">
         <div class="chart-container">
           <div class="chart-header">
             <h3>BTC/USD (Coindesk)</h3>
@@ -291,13 +311,16 @@ function updateCharts() {
 
 // Инициализация при монтировании
 onMounted(() => {
-  store.generateMockData();
-  store.fetchCoindeskData();
+  // Запускаем загрузку с небольшой задержкой, чтобы показать индикатор загрузки
+  setTimeout(() => {
+    store.generateMockData();
+    store.fetchCoindeskData();
+  }, 500);
 
   // Создаем графики после получения данных
   setTimeout(() => {
     updateCharts();
-  }, 100);
+  }, 1000);
 
   // Обновляем данные каждую минуту
   setInterval(() => {
@@ -449,6 +472,46 @@ th {
   padding: 10px 20px;
   border-radius: 4px;
   cursor: pointer;
+}
+
+/* Добавляем стили для индикатора загрузки */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  background: #1a1d20;
+  border-radius: 8px;
+  margin: 20px;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #02c076;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  background: #1a1d20;
+  border-radius: 8px;
+  margin: 20px;
+  color: #f6465d;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (min-width: 1200px) {
