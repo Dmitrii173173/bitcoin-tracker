@@ -11,6 +11,10 @@
   },
   "dependencies": {
     "@nuxtjs/tailwindcss": "^6.11.4",
+    "@pinia/nuxt": "^0.5.1",
+    "chart.js": "^4.3.0",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "date-fns": "^2.30.0",
     "nuxt": "^3.16.1",
     "pinia": "^2.1.7",
     "vue": "^3.4.21",
