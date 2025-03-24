@@ -1,10 +1,10 @@
 version: '3.8'
 services:
-  # Фронтенд - статический сайт с Nginx
+  # Фронтенд - сервер на Node.js Express
   frontend:
     build: 
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.new
     ports:
       - "${PORT:-80}:80"
     depends_on:
