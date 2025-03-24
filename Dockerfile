@@ -24,8 +24,8 @@ WORKDIR /app
 
 # Копируем только необходимые файлы из этапа сборки
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/server.js ./
+COPY --from=builder /app/.output ./.output
 
 # Устанавливаем только production зависимости
 RUN npm install --production
@@ -33,6 +33,7 @@ RUN npm install --production
 # Устанавливаем переменные окружения
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV BACKEND_URL=http://backend:3001
 
 # Открываем порт
 EXPOSE 3000

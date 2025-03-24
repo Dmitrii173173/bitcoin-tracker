@@ -1,6 +1,7 @@
 # Этап сборки
 FROM node:18-alpine AS builder
 
+# Устанавливаем рабочую директорию
 WORKDIR /app
 
 # Копируем файлы зависимостей
@@ -99,13 +100,15 @@ RUN echo "=== Содержимое директории после сборки 
     echo "=== Проверка server.js ===" && \
     cat server.js
 
-# Финальный этап
+# Этап production
 FROM node:18-alpine
 
+# Устанавливаем рабочую директорию
 WORKDIR /app
 
 # Копируем только необходимые файлы из этапа сборки
 COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/server.js ./
 
 # Создаем необходимые директории
@@ -117,10 +120,18 @@ COPY --from=builder /app/dist/ ./dist/ 2>/dev/null || true
 COPY --from=builder /app/data/ ./data/ 2>/dev/null || true
 
 # Устанавливаем только production зависимости
-RUN npm ci --only=production
+RUN npm install --production
 
 # Добавляем express и http-proxy-middleware для резервного сервера
 RUN npm install express http-proxy-middleware
+
+# Устанавливаем переменные окружения
+ENV NODE_ENV=production
+ENV PORT=80
+ENV BACKEND_URL=http://backend:3001
+
+# Открываем порт
+EXPOSE 80
 
 # Проверяем наличие файлов перед запуском
 RUN echo "=== Проверка файлов перед запуском ===" && \
