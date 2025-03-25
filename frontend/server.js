@@ -52,6 +52,11 @@ if (fs.existsSync(outputPath)) {
     const express = require('express');
     const { createProxyMiddleware } = require('http-proxy-middleware');
     const app = express();
+
+    // Добавляем маршрут для проверки работоспособности
+    app.get('/', (req, res) => {
+      res.status(200).send('Сервис работает');
+    });
     
     // Настройка прокси для API запросов
     app.use('/api', createProxyMiddleware({
@@ -86,7 +91,10 @@ if (fs.existsSync(outputPath)) {
       });
     } else {
       console.log('Не найдены папки со статическими файлами');
-      app.get('*', (req, res) => {
+      // Не переопределяем маршрут '/', чтобы healthcheck работал
+      app.get('/*', (req, res) => {
+        // Если это корневой маршрут, не обрабатываем его здесь (уже определен выше)
+        if (req.path === '/') return;
         res.status(500).send('Не найдены папки со статическими файлами');
       });
     }
