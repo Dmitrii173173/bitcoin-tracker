@@ -1,18 +1,12 @@
-# Используем Microsoft Container Registry вместо Docker Hub
-FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-focal
+# Используем базовый образ Node.js
+FROM node:18-alpine
 
-# Устанавливаем Node.js
-RUN apt-get update && apt-get install -y \
-    curl \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
+# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем все файлы проекта
-COPY . .
+# Копируем файлы зависимостей
+COPY package*.json ./
+COPY prisma ./prisma/
 
 # Устанавливаем зависимости
 RUN npm install
@@ -20,5 +14,11 @@ RUN npm install
 # Генерируем Prisma Client
 RUN npx prisma generate
 
+# Копируем исходный код
+COPY . .
+
+# Устанавливаем переменные окружения
+ENV NODE_ENV=production
+
 # Запускаем приложение
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npm start"]
+CMD ["node", "index.js"]

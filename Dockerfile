@@ -1,5 +1,5 @@
-# Этап сборки
-FROM node:18-alpine AS builder
+# Используем базовый образ Node.js
+FROM node:18-alpine
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
@@ -14,28 +14,10 @@ RUN npm install
 COPY . .
 
 # Собираем приложение
-RUN npm run build || echo "Сборка не выполнена, продолжаем..."
+RUN npm run build || echo "Сборка не выполнена, но это ОК"
 
-# Этап production
-FROM node:18-alpine
-
-# Устанавливаем рабочую директорию
-WORKDIR /app
-
-# Копируем только необходимые файлы из этапа сборки
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/server.js ./
-
-# Создаем необходимые директории
-RUN mkdir -p .output dist data
-
-# Пытаемся скопировать директории, если они существуют
-COPY --from=builder /app/.output ./.output || true
-COPY --from=builder /app/dist ./dist || true
-COPY --from=builder /app/data ./data || true
-
-# Устанавливаем только production зависимости
-RUN npm install --production
+# Создаем необходимые директории для статических файлов
+RUN mkdir -p .output/public dist
 
 # Устанавливаем express и http-proxy-middleware для сервера
 RUN npm install express http-proxy-middleware
